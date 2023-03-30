@@ -23,8 +23,8 @@ But we want to go beyond intuition and illustrate this with data. In this reposi
 For each feature implemented, we will track the following quantitative data:
 
 1. Number of files created and number of files changed/deleted.
-2. Lines of code added vs. lines of code deleted.
-3. Number of new connections (type imports won't be counted)
+2. Lines of code added and lines of code deleted.
+3. Coupling score: Number of new individual usages of imported classes or methods, type imports won't be counted.
 
 We will also summarize the changes and share impressions for each iteration, and you will find a conclusion at the end of this document. Each iteration will be pushed in a separate commit to ease detailed inspection of the work made, and allowing others to reach their own conclusions.
 
@@ -88,3 +88,65 @@ Minimal setup to build empty projects. We won't collect data for this iteration.
 #### Booster project ([19dff43](https://github.com/boostercloud/kyc-example/commit/19dff43cc8b4f1abec46e46e6c6c3dc400232844))
 
 1. Install Booster CLI and create a new project.
+
+### Milestone 1: Profile creation
+
+Profile creation is the first step in the KYC process, where the user provides their basic information such as name, address, date of birth, contact details, Social Security number (SSN), or Tax Identification Number (TIN). In order to track the profile state during the KYC process, we will also have a `kycStatus` field in the `Profile` entity with an initial status of `KYCPending`.
+
+#### NestJS implementation steps ([48601ff](https://github.com/boostercloud/kyc-example/commit/48601ff550dc2e85d44cbe7c7db408205741ecb9))
+
+1. Create a `ProfileController` that implements handlers for creating and reading profile HTTP endpoints.
+2. Create a `Profile` entity that describes the profile object schema, as well as the valid states, defaulting to the initial state `KYCPending`.
+3. Create a `ProfileService` class that implements the creation and finder methods for the profiles database table.
+4. Create a `ProfileModule` that glues all the pieces together.
+5. Update the `AppModule` to import the new module.
+
+```mermaid
+graph TD;
+    A[AppModule] -->|"link modules"| B[ProfileModule];
+    C[ProfileController] -->|"create()"| D[ProfileService];
+    C -->|"findAll()"| D;
+    C -->|"findById()"| D;
+    B -->|"link controller"| C;
+    B -->|"link service"| D;
+    B -->|"link to TypeOrm"| E[Profile];
+    
+    style A fill:#ff6666,stroke:#333,stroke-width:4px;
+    style B fill:#00cc66,stroke:#333,stroke-width:4px;
+    style C fill:#00cc66,stroke:#333,stroke-width:4px;
+    style D fill:#00cc66,stroke:#333,stroke-width:4px;
+    style E fill:#00cc66,stroke:#333,stroke-width:4px;
+```
+
+| Files Created | Files Changed/Deleted | LoC Added | LoC Deleted | Coupling Score |
+| ------------- | --------------------- | --------- | ----------- | -------------- |
+| 4             | 1                     | 120       | 0           | 7              |
+
+#### Booster Framework implementation steps ([8b8b360](https://github.com/boostercloud/kyc-example/commit/8b8b36044678f8243abdcaee8e2ba820265788ff))
+
+1. Create the `CreateProfile` command with the required fields.
+2. Create a `types` file for shared types like the `KYCStatus`.
+3. Create the `ProfileCreated` event.
+4. Create the `Profile` entity and set up the reducer function.
+5. Create the `ProfileReadModel` read model and set up the projection function.
+
+```mermaid
+graph TD;
+    A[CreateProfile command] -->|"constructor"| B[ProfileCreated event];
+    C[Profile entity] -->|"link reducer"| B;
+    D[KYCStatus type];
+    E[ProfileReadModel] -->|"link projection"| C;
+    style A fill:#00cc66,stroke:#333,stroke-width:4px;
+    style B fill:#00cc66,stroke:#333,stroke-width:4px;
+    style C fill:#00cc66,stroke:#333,stroke-width:4px;
+    style D fill:#00cc66,stroke:#333,stroke-width:4px;
+    style E fill:#00cc66,stroke:#333,stroke-width:4px;
+```
+
+| Files Created | Files Changed/Deleted | LoC Added | LoC Deleted | Coupling Score |
+| ------------- | --------------------- | --------- | ----------- | -------------- |
+| 5             | 0                     | 113       | 0           | 3              |
+
+#### Milestone 1 conclusions
+
+For this first use case, the amount of files created, updated, and lines of code added and deleted, are similar, but we can already see how Booster adds less than a half of the links required in NestJS. The direction of the relationships are different too: in NestJS we find a tree-like structure, where the (root module) `AppModule` links the new `ProfileModule`, and then this one links together the corresponding controller, model and service. Then, the `ProfileController` uses the `ProfileService` to fulfill the requests. In Booster, we find full separation of write (`CreateProfile command`) and read (`ProfileReadModel`) pipelines, as expected due to the CQRS design, and both pipelines are solely connected by the `ProfileCreated event`.
