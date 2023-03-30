@@ -78,3 +78,57 @@ Minimal setup to create an empty project in which we can start adding use cases.
 #### Comparation
 
 This step is not related to the MVC vs. CQRS/ES comparison, but it's still worth noting that NestJS don't make any assumptions on how you're storing the data, so it requires some extra steps like chosing an ORM, installing the library and configuring it to use your database of choice. Booster is more opinionated, so it comes with a pre-configured environment in which you can start working right away with no configuration at all.
+
+### Milestone 1: Profile creation
+
+Profile creation is the first step in the KYC process, where the user provides their basic information such as name, address, date of birth, contact details, Social Security number (SSN), or Tax Identification Number (TIN). This step is crucial to start the identity verification process. As a requirement, the profile must be created with an initial status of "KYCPending".
+
+#### NestJS implementation steps ([4ed4953](https://github.com/boostercloud/kyc-example/commit/4ed4953b366d7de49a5d4fac64330914939a52ee))
+
+1. Create a `ProfileController` that implements handlers for creating and reading profile HTTP endpoints.
+2. Create a `Profile` entity that describes the profile object schema, as well as the valid states, defaulting to the initial state `KYCPending`.
+3. Create a `ProfileService` class that implements the creation and finder methods for the profiles database table.
+4. Create a `ProfileModule` that glues all the pieces together.
+5. Update the `AppModule` to import the new module.
+
+```mermaid
+graph TD;
+    A[AppModule] --> B[ProfileModule];
+    B --> C[ProfileController];
+    B --> D[ProfileService];
+    C --> E[Profile];
+    C --> D;
+    D --> E;
+    style A fill:#ff6666,stroke:#333,stroke-width:4px;
+    style B fill:#00cc66,stroke:#333,stroke-width:4px;
+    style C fill:#00cc66,stroke:#333,stroke-width:4px;
+    style D fill:#00cc66,stroke:#333,stroke-width:4px;
+    style E fill:#00cc66,stroke:#333,stroke-width:4px;
+```
+
+#### Booster Framework implementation steps ([3457070](https://github.com/boostercloud/kyc-example/commit/3457070ad63d3dbb5e4df05b9340130ea52c548b))
+
+1. Create the `CreateProfile` command with the required fields.
+2. Create a `types` file for shared types like the `KYCStatus`.
+3. Create the `ProfileCreated` event.
+4. Create the `Profile` entity and set up the reducer function.
+5. Create the `ProfileReadModel` read model and set up the projection function.
+
+```mermaid
+graph TD;
+    A[CreateProfile command] --> B[ProfileCreated event];
+    C[Profile entity] --> B;
+    C[Profile entity] --> D[KYCStatus type];
+    B --> D;
+    E[ProfileReadModel] --> C;
+    E --> D;
+    style A fill:#00cc66,stroke:#333,stroke-width:4px;
+    style B fill:#00cc66,stroke:#333,stroke-width:4px;
+    style C fill:#00cc66,stroke:#333,stroke-width:4px;
+    style D fill:#00cc66,stroke:#333,stroke-width:4px;
+    style E fill:#00cc66,stroke:#333,stroke-width:4px;
+```
+
+#### Comparation
+
+Comparing the lists for this initial use case, we can see that the Booster Framework already requires fewer steps to implement the profile creation feature. Also, the steps in Booster are more focused on the business logic and require less boilerplate code, making it simpler to reason about the system. The NestJS implementation involves more setup and configuration steps, which may not directly relate to the core business logic of the feature.
