@@ -37,3 +37,44 @@ We have created two separate implementations: one using NestJS (MVC) and the oth
 
     * Continuously monitor the user's account activity to identify any unusual or suspicious transactions.
     * Conduct periodic reviews of the user's information and update the risk assessment accordingly.
+
+## Repository Structure
+
+The repository is organized into two main folders:
+
+* `kyc-nest`: Contains the NestJS implementation, which follows the MVC architectural pattern.
+* `kyc-booster`: Contains the Booster Framework implementation, which follows the CQRS + Event Sourcing architectural pattern.
+
+## Getting Started
+
+To run and explore each implementation, follow the instructions provided in the README file inside each folder.
+
+## Comparison Criteria
+
+When comparing the two implementations, we'll focus mainly on the number of files created and the number of files changed as well as the dependencies of each file, representing them graphically for easier understanding. For each step, we'll also highlight the overall experience regarding semantics and structure, but the main point we want to demonstrate is that code complexity in MVC projects is compound over time while it remains relatively linear in a CQRS/ES project.
+
+## Logbook
+
+For each milestone, we'll provide:
+
+1. A summary of the significant steps required to fulfill the use case.
+2. The full diff of the change to allow you to inspect the changes.
+3. A Mermaid diagram highlighting the additions, changes and relations.
+
+### Milestone 0: Project preparation
+
+Minimal setup to create an empty project in which we can start adding use cases.
+
+#### NestJS project ([2513803](https://github.com/boostercloud/kyc-example/commit/2513803c85c50d1f9601404277d126c9cf7a584d))
+
+1. Install NestJS CLI and create a new project.
+2. Install SQLite and TypeORM libraries.
+3. Update the `ormconfig.json` file to use SQLite.
+
+#### Booster project ([19dff43](https://github.com/boostercloud/kyc-example/commit/19dff43cc8b4f1abec46e46e6c6c3dc400232844))
+
+1. Install Booster CLI and create a new project.
+
+#### Comparation
+
+This step is not related to the MVC vs. CQRS/ES comparison, but it's still worth noting that NestJS don't make any assumptions on how you're storing the data, so it requires some extra steps like chosing an ORM, installing the library and configuring it to use your database of choice. Booster is more opinionated, so it comes with a pre-configured environment in which you can start working right away with no configuration at all.
