@@ -1,3 +1,5 @@
 **/node_modules/*
 **/dist/*
 kyc-nest/kyc-nest.sqlite
+kyc-booster/.booster/*
+kyc-booster/errors.log
