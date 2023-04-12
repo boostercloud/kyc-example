@@ -21,10 +21,12 @@ export class ProfileReadModel {
     readonly kycStatus: KYCStatus,
     readonly ssn?: string,
     readonly tin?: string,
+    readonly verificationId?: UUID,
+    readonly verifiedAt?: string,
   ) {}
 
   @Projects(Profile, 'id')
   public static projectProfile(entity: Profile): ProjectionResult<ProfileReadModel> {
-    return new ProfileReadModel(entity.id, entity.firstName, entity.lastName, entity.address, entity.city, entity.state, entity.zipCode, entity.dateOfBirth, entity.phoneNumber, entity.email, entity.kycStatus, entity.ssn, entity.tin)
+    return new ProfileReadModel(entity.id, entity.firstName, entity.lastName, entity.address, entity.city, entity.state, entity.zipCode, entity.dateOfBirth, entity.phoneNumber, entity.email, entity.kycStatus, entity.ssn, entity.tin, entity.verificationId, entity.idVerifiedAt)
   }
 }
