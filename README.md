@@ -93,17 +93,16 @@ Profile creation is the first step in the KYC process, where the user provides t
 
 ```mermaid
 graph TD;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
     A[AppModule] --> B[ProfileModule];
     B --> C[ProfileController];
     B --> D[ProfileService];
     C --> E[Profile];
     C --> D;
     D --> E;
-    style A fill:#ff6666,stroke:#333,stroke-width:4px;
-    style B fill:#00cc66,stroke:#333,stroke-width:4px;
-    style C fill:#00cc66,stroke:#333,stroke-width:4px;
-    style D fill:#00cc66,stroke:#333,stroke-width:4px;
-    style E fill:#00cc66,stroke:#333,stroke-width:4px;
+    class A red;
+    class B,C,D,E green;
 ```
 
 #### Booster Framework implementation steps ([3457070](https://github.com/boostercloud/kyc-example/commit/3457070ad63d3dbb5e4df05b9340130ea52c548b))
@@ -116,19 +115,83 @@ graph TD;
 
 ```mermaid
 graph TD;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
     A[CreateProfile command] --> B[ProfileCreated event];
     C[Profile entity] --> B;
     C[Profile entity] --> D[KYCStatus type];
     B --> D;
     E[ProfileReadModel] --> C;
     E --> D;
-    style A fill:#00cc66,stroke:#333,stroke-width:4px;
-    style B fill:#00cc66,stroke:#333,stroke-width:4px;
-    style C fill:#00cc66,stroke:#333,stroke-width:4px;
-    style D fill:#00cc66,stroke:#333,stroke-width:4px;
-    style E fill:#00cc66,stroke:#333,stroke-width:4px;
+    class A,B,C,D,E green
 ```
 
 #### Comparation
 
-Comparing the lists for this initial use case, we can see that the Booster Framework already requires fewer steps to implement the profile creation feature. Also, the steps in Booster are more focused on the business logic and require less boilerplate code, making it simpler to reason about the system. The NestJS implementation involves more setup and configuration steps, which may not directly relate to the core business logic of the feature.
+Comparing the lists for this initial use case, we can see that the Booster Framework already requires fewer steps to implement the profile creation feature. Also, the steps in Booster are more focused on the business logic and require less boilerplate code, making it simpler to reason about the system. The NestJS implementation involves more setup and configuration steps, which may not directly relate to the core business logic of the feature. It's noticeable that even when this is the first use case implemented in the application, the NestJS project already required a small change in pre-existing code.
+
+### Milestone 2: ID Verification
+
+In this milestone, we implement the identity (ID) verification process. The user's ID is sent out to an external verification service, which will return a success or rejection status. The profile's `KYCStatus` should be updated accordingly. Apart from handling the webhook, the implementation also takes care of validating transitions between `KYCStatus` states.
+
+#### NestJS implementation steps ([224b56c](https://github.com/boostercloud/kyc-example/commit/224b56c2f317c65f3ee957f6364e276a87358bae))
+
+1. Create a `KYCController` that listens for webhook messages from the external ID verification service.
+2. Create a `WebhookMessage` interface that defines the expected shape of the webhook event payload.
+3. Create a `KYCService` class that validates the webhook message, processes the ID verification result, and updates the user's `KYCStatus`.
+4. Create a `KYCModule` that brings all the new elements together, and imports the `ProfileModule` since it depends on the `ProfileService`.
+5. Update `ProfileService` to add the `updateKycStatus` method to update the user's `KYCStatus` and to handle verification status transitions rules.
+6. Update `ProfileModule` to export `ProfileService` so it can be used in the `KYCModule`.
+7. Update `Profile` entity file to add new valid states to the `KYCStatus` type.
+8. Update `AppModule` to import the new `KYCModule`.
+
+```mermaid
+graph TD;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
+    A[AppModule] --> B[ProfileModule];
+    A --> I[KYCModule];
+    B --> F[ProfileService];
+    F --> E[Profile];
+    I --> G[KYCController];
+    I --> H[KYCService];
+    I --> B
+    G --> J[WebhookMessage];
+    G --> H;
+    H --> J;
+    H --> F;
+    class A,B,F,E red;
+    class G,H,I,J green;
+```
+
+#### Booster Framework implementation steps ([4348e15](https://github.com/boostercloud/kyc-example/commit/8e15b5ccf72ef260bbb35b12a5605ebe5c970eb1))
+
+1. Create the `ProcessIDVerification` command with the expected fields coming from the webhook.
+2. Create the `IDVerificationSuccess` event.
+3. Create the `IDVerificationRejected` event.
+4. Create a `state-validation.ts` with a function for state transition validation.
+5. Modify the `types.ts` file to add new valid states to the `KYCStatus` type (`KYCIDVerified` and `KYCIDRejected`)
+6. Update the `Profile` entity with reducer functions for handling the new `IDVerificationSuccess` and `IDVerificationRejected` events.
+7. Update the `ProfileReadModel` to add the new fields that expose verification metadata.
+
+```mermaid
+graph TD;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
+    A[ProcessIDVerification command] --> B[IDVerificationSuccess event];
+    A --> C[IDVerificationRejected event];
+    A --> D[Profile entity];
+    A --> E[State validation];
+    D --> F[KYCStatus type];
+    D --> B;
+    D --> C;
+    G[ProfileReadModel] --> D;
+    G --> F;
+    class A,E,B,C green;
+    class D,F,G red;
+```
+
+#### Comparation
+
+Again, Booster Framework requires one step less than NestJS, but more importantly, the changes in Booster are more semantic and closer to business language; all files created in Booster represent specific business concepts, while the NestJS implementation files are more related to framework structural artifacts.
+
+From a code organization perspective, Booster's approach provides a clear separation of concerns, as each command or event-related functionality is handled by separate files or functions, and each artifact in our project is centered on a single specific goal while some files in the MVC implementation are required just to manage the project's structure. This makes it easier to reason about the code.
