@@ -103,7 +103,7 @@ Profile creation is the first step in the KYC process, where the user provides t
 
 ```mermaid
 graph TD;
-    A[AppModule] -->|"link modules"| B[ProfileModule];
+    A[AppModule] -->|"link module"| B[ProfileModule];
     C[ProfileController] -->|"create()"| D[ProfileService];
     C -->|"findAll()"| D;
     C -->|"findById()"| D;
@@ -150,3 +150,75 @@ graph TD;
 #### Milestone 1 conclusions
 
 For this first use case, the amount of files created, updated, and lines of code added and deleted, are similar, but we can already see how Booster adds less than a half of the links required in NestJS. The direction of the relationships are different too: in NestJS we find a tree-like structure, where the (root module) `AppModule` links the new `ProfileModule`, and then this one links together the corresponding controller, model and service. Then, the `ProfileController` uses the `ProfileService` to fulfill the requests. In Booster, we find full separation of write (`CreateProfile command`) and read (`ProfileReadModel`) pipelines, as expected due to the CQRS design, and both pipelines are solely connected by the `ProfileCreated event`.
+
+### Milestone 2: ID Verification
+
+In this milestone, we implement the identity (ID) verification process. We will assume that the user was redirected to an external ID verification service that will call a webhook in our service with the corresponding success or rejection status. The profile's `KYCStatus` should be updated accordingly. Apart from handling the webhook, the implementation also takes care of validating transitions between `KYCStatus` states.
+
+#### NestJS implementation steps ([224b56c](https://github.com/boostercloud/kyc-example/commit/224b56c2f317c65f3ee957f6364e276a87358bae))
+
+1. Create a `KYCController` that listens for webhook messages from the external ID verification service.
+2. Create a `WebhookMessage` interface that defines the expected shape of the webhook event payload.
+3. Create a `KYCService` class that validates the webhook message, processes the ID verification result, and updates the user's `KYCStatus`.
+4. Create a `KYCModule` that brings all the new elements together, and imports the `ProfileModule` since it depends on the `ProfileService`.
+5. Update `ProfileService` to add the `updateKycStatus` method to update the user's `KYCStatus` and to handle verification status transitions rules.
+6. Update `ProfileModule` to export `ProfileService` so it can be used in the `KYCModule`.
+7. Update `Profile` entity file to add new valid states to the `KYCStatus` type.
+8. Update `AppModule` to import the new `KYCModule`.
+
+```mermaid
+graph TD;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
+    A[AppModule] -->|"link module"| I[KYCModule];
+    B[ProfileModule] -->|"link exports"| F[ProfileService];
+    E[Profile];
+    I -->|"link controller"| G[KYCController];
+    I -->|"link service"| H[KYCService];
+    I -->|"import module"| B
+    J[WebhookMessage];
+    G -->|"handleWebhook()"| H;
+    H -->|"update(success)"| F;
+    H -->|"update(rejected)"| F;
+    class A,B,F,E red;
+    class G,H,I,J green;
+```
+
+| Files Created | Files Changed/Deleted | LoC Added | LoC Deleted | Coupling Score |
+| ------------- | --------------------- | --------- | ----------- | -------------- |
+| 4             | 4                     | 126       | 1           | 8              |
+
+#### Booster Framework implementation steps ([4348e15](https://github.com/boostercloud/kyc-example/commit/8e15b5ccf72ef260bbb35b12a5605ebe5c970eb1))
+
+1. Create the `ProcessIDVerification` command with the expected fields coming from the webhook.
+2. Create the `IDVerificationSuccess` event.
+3. Create the `IDVerificationRejected` event.
+4. Create a `state-validation.ts` with a function for state transition validation.
+5. Modify the `types.ts` file to add new valid states to the `KYCStatus` type (`KYCIDVerified` and `KYCIDRejected`)
+6. Update the `Profile` entity with reducer functions for handling the new `IDVerificationSuccess` and `IDVerificationRejected` events.
+7. Update the `ProfileReadModel` to add the new fields that expose verification metadata.
+
+```mermaid
+graph TD;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
+    A[ProcessIDVerification command] -->|"constructor"| B[IDVerificationSuccess event];
+    A -->|"constructor"| C[IDVerificationRejected event];
+    A -->|"read data"| D[Profile entity];
+    A -->|"isValidTransition(success)"| E[State validation];
+    A -->|"isValidTransition(rejection)"| E[State validation];
+    F[KYCStatus type];
+    D -->|"link reducer"| B;
+    D -->|"link reducer"| C;
+    G[ProfileReadModel];
+    class A,E,B,C green;
+    class D,F,G red;
+```
+
+| Files Created | Files Changed/Deleted | LoC Added | LoC Deleted | Coupling Score |
+| ------------- | --------------------- | --------- | ----------- | -------------- |
+| 4             | 3                     | 116       | 2           | 7              |
+
+#### Comparation
+
+In this scenario, the statistics are very similar. This change involved many structural changes. In the NestJS project, we added a new `KYCModule` to handle the verification webhook, and we needed to link it back with the `ProfilesModule` this has transformed the initial tree into a graph, but all arrows still go from top (the root) to bottom (the services). In Booster, we read an entity from the `ProcessIDVerification command` and handled the success/rejection scenarios with separate events. We also added a new state validation function. In this case, all new links are added in the write pipeline with a similar structure than the one we had in the previous milestone, with the addition of the new link between the command and the `Profile` entity to check its current state before emitting the corresponding event.
