@@ -1,6 +1,11 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-export type KYCStatus = 'KYCPending' | 'KYCIDVerified' | 'KYCIDRejected';
+export type KYCStatus =
+  | 'KYCPending'
+  | 'KYCIDVerified'
+  | 'KYCIDRejected'
+  | 'KYCAddressVerified'
+  | 'KYCAddressRejected';
 
 @Entity()
 export class Profile {
@@ -51,4 +56,13 @@ export class Profile {
 
   @Column({ nullable: true })
   idRejectedAt?: string;
+
+  @Column({ nullable: true })
+  addressVerificationId?: string;
+
+  @Column({ nullable: true })
+  addressVerifiedAt?: string;
+
+  @Column({ nullable: true })
+  addressRejectedAt?: string;
 }
