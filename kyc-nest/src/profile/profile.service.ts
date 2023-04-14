@@ -55,12 +55,21 @@ export class ProfileService {
     currentState: KYCStatus,
     newState: KYCStatus,
   ): boolean {
-    const allowedTransitions: Record<KYCStatus, Array<KYCStatus>> = {
-      KYCPending: ['KYCIDVerified', 'KYCIDRejected'],
-      KYCIDVerified: [],
-      KYCIDRejected: [],
-    };
+    return this.allowedTransitions(currentState).includes(newState);
+  }
 
-    return allowedTransitions[currentState]?.includes(newState);
+  private allowedTransitions(currentState: KYCStatus): KYCStatus[] {
+    switch (currentState) {
+      case 'KYCPending':
+        return ['KYCIDVerified', 'KYCIDRejected'];
+      case 'KYCIDVerified':
+        return ['KYCAddressVerified', 'KYCAddressRejected'];
+      case 'KYCIDRejected':
+        return [];
+      case 'KYCAddressVerified':
+        return [];
+      case 'KYCAddressRejected':
+        return [];
+    }
   }
 }
