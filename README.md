@@ -23,8 +23,9 @@ But we want to go beyond intuition and illustrate this with data. In this reposi
 For each feature implemented, we will track the following quantitative data:
 
 1. Number of files created and number of files changed/deleted.
-2. Lines of code added and lines of code deleted.
-3. Coupling score: Number of new individual usages of imported classes or methods, type imports won't be counted.
+2. Number of functions/classes refactored.
+3. Lines of code added and lines of code deleted.
+4. Explicit Links: Number of explicit calls added/changed to constructors/functions from a different file.
 
 We will also summarize the changes and share impressions for each iteration, and you will find a conclusion at the end of this document. Each iteration will be pushed in a separate commit to ease detailed inspection of the work made, and allowing others to reach their own conclusions.
 
@@ -103,24 +104,21 @@ Profile creation is the first step in the KYC process, where the user provides t
 
 ```mermaid
 graph TD;
-    A[AppModule] -->|"link module"| B[ProfileModule];
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
+    A[AppModule];
+    B[ProfileModule];
     C[ProfileController] -->|"create()"| D[ProfileService];
     C -->|"findAll()"| D;
     C -->|"findById()"| D;
-    B -->|"link controller"| C;
-    B -->|"link service"| D;
-    B -->|"link to TypeOrm"| E[Profile];
-    
-    style A fill:#ff6666,stroke:#333,stroke-width:4px;
-    style B fill:#00cc66,stroke:#333,stroke-width:4px;
-    style C fill:#00cc66,stroke:#333,stroke-width:4px;
-    style D fill:#00cc66,stroke:#333,stroke-width:4px;
-    style E fill:#00cc66,stroke:#333,stroke-width:4px;
+    E[Profile];
+    class A red;
+    class B,C,D,E green;
 ```
 
-| Files Created | Files Changed/Deleted | LoC Added | LoC Deleted | Coupling Score |
-| ------------- | --------------------- | --------- | ----------- | -------------- |
-| 4             | 1                     | 120       | 0           | 7              |
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
+| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
+| 4             | 1                     | 0         | 120       | 0           | 3              |
 
 #### Booster Framework implementation steps ([8b8b360](https://github.com/boostercloud/kyc-example/commit/8b8b36044678f8243abdcaee8e2ba820265788ff))
 
@@ -132,22 +130,19 @@ graph TD;
 
 ```mermaid
 graph TD;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
     A[CreateProfile command] -->|"constructor"| B[ProfileCreated event];
-    C[Profile entity] -->|"link reducer"| B;
+    C[Profile entity];
     D[KYCStatus type];
-    E[ProfileReadModel] -->|"link projection"| C;
-    style A fill:#00cc66,stroke:#333,stroke-width:4px;
-    style B fill:#00cc66,stroke:#333,stroke-width:4px;
-    style C fill:#00cc66,stroke:#333,stroke-width:4px;
-    style D fill:#00cc66,stroke:#333,stroke-width:4px;
-    style E fill:#00cc66,stroke:#333,stroke-width:4px;
+    E[ProfileReadModel];
+    class A,B,C,D,E green;
 ```
 
-| Files Created | Files Changed/Deleted | LoC Added | LoC Deleted | Coupling Score |
-| ------------- | --------------------- | --------- | ----------- | -------------- |
-| 5             | 0                     | 113       | 0           | 3              |
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
+| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
+| 5             | 0                     | 0         | 113       | 0           | 1              |
 
-#### Milestone 1 conclusions
+#### Milestone 1: Conclusions
 
 For this first use case, the amount of files created, updated, and lines of code added and deleted, are similar, but we can already see how Booster adds less than a half of the links required in NestJS. The direction of the relationships are different too: in NestJS we find a tree-like structure, where the (root module) `AppModule` links the new `ProfileModule`, and then this one links together the corresponding controller, model and service. Then, the `ProfileController` uses the `ProfileService` to fulfill the requests. In Booster, we find full separation of write (`CreateProfile command`) and read (`ProfileReadModel`) pipelines, as expected due to the CQRS design, and both pipelines are solely connected by the `ProfileCreated event`.
 
@@ -170,12 +165,13 @@ In this milestone, we implement the identity (ID) verification process. We will 
 graph TD;
     classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
     classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
-    A[AppModule] -->|"link module"| I[KYCModule];
-    B[ProfileModule] -->|"link exports"| F[ProfileService];
+    A[AppModule];
+    I[KYCModule];
+    B[ProfileModule];
+    F[ProfileService];
     E[Profile];
-    I -->|"link controller"| G[KYCController];
-    I -->|"link service"| H[KYCService];
-    I -->|"import module"| B
+    G[KYCController];
+    H[KYCService];
     J[WebhookMessage];
     G -->|"handleWebhook()"| H;
     H -->|"update(success)"| F;
@@ -184,9 +180,9 @@ graph TD;
     class G,H,I,J green;
 ```
 
-| Files Created | Files Changed/Deleted | LoC Added | LoC Deleted | Coupling Score |
-| ------------- | --------------------- | --------- | ----------- | -------------- |
-| 4             | 4                     | 126       | 1           | 8              |
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
+| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
+| 4             | 4                     | 0         | 126       | 1           | 3              |
 
 #### Booster Framework implementation steps ([4348e15](https://github.com/boostercloud/kyc-example/commit/8e15b5ccf72ef260bbb35b12a5605ebe5c970eb1))
 
@@ -208,17 +204,83 @@ graph TD;
     A -->|"isValidTransition(success)"| E[State validation];
     A -->|"isValidTransition(rejection)"| E[State validation];
     F[KYCStatus type];
-    D -->|"link reducer"| B;
-    D -->|"link reducer"| C;
     G[ProfileReadModel];
     class A,E,B,C green;
     class D,F,G red;
 ```
 
-| Files Created | Files Changed/Deleted | LoC Added | LoC Deleted | Coupling Score |
-| ------------- | --------------------- | --------- | ----------- | -------------- |
-| 4             | 3                     | 116       | 2           | 7              |
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
+| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
+| 4             | 3                     | 0         | 116       | 2           | 5              |
 
-#### Comparation
+#### Milestone 2: Conclusions
 
-In this scenario, the statistics are very similar. This change involved many structural changes. In the NestJS project, we added a new `KYCModule` to handle the verification webhook, and we needed to link it back with the `ProfilesModule` this has transformed the initial tree into a graph, but all arrows still go from top (the root) to bottom (the services). In Booster, we read an entity from the `ProcessIDVerification command` and handled the success/rejection scenarios with separate events. We also added a new state validation function. In this case, all new links are added in the write pipeline with a similar structure than the one we had in the previous milestone, with the addition of the new link between the command and the `Profile` entity to check its current state before emitting the corresponding event.
+In this scenario, the statistics are very similar. This change involved structural changes in both projects for state management. In the NestJS project, we added a new `KYCController` to handle the verification webhook using `KYCService`. Then, the `KYCService` uses the `ProfilesModule` to explicitly update the entity.
+
+In Booster, we introduced a new command that makes use of the existing entity and a new state validation function before accepting the incoming request, so all orchestration for this use case is made by the command itself, keeping the new use case self-contained. State management is handled treating the events and entities as data, so no explicit state management is needed, showing a better distribution of responsibilities.
+
+### Milestone 3: Address Verification
+
+In this milestone, we implement the address verification process. As we did the ID verification process, we'll simulate that we redirect the user to an external verification service. This service will then call our KYC service back with the verification outcome (Success or rejected). We must update the profile's `KYCStatus` to reflect this result. In addition to processing the webhook, our implementation is also responsible for ensuring the validity of transitions between different `KYCStatus` states.
+
+#### NestJS implementation steps ([bec8b97](https://github.com/boostercloud/kyc-example/commit/bec8b973316af3225469885a59c87d56ee688607))
+
+1. Refactor the `KYCController` to separate ID verification and address verification webhook handlers.
+2. Refactor the `KYCService` to create separate methods for handling ID verification and address verification webhook messages.
+3. Update the `webhook-message.interface.ts` file to rename the existing interface of the ID verification webhook schema and add a new one for address verification.
+4. Update the `Profile` file to add new valid states to the `KYCStatus` type for address verification (`KYCAddressVerified` and `KYCAddressRejected`) as well as new fields to keep track of validation.
+5. Refactored the `ProfileService` to better handle address verification status transitions.
+
+```mermaid
+graph TD;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    A[KYCController] -->|"handleIdVerificationWebhook"| B[KYCService]
+    A -->|"handleAddressVerificationWebhook"| B
+    B -->|"update(address success)"| D[ProfileService]
+    B -->|"update(address rejected)"| D
+    E[Profile]
+    C[webhook message interface]
+    class A,B,C,D,E red;
+```
+
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
+| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
+| 0             | 5                     | 3         | 116       | 18          | 4              |
+
+#### Booster implementation steps ([727d3ce](https://github.com/boostercloud/kyc-example/commit/727d3ce6f062784250b905336bcc44d27a4c6028))
+
+1. Create the command `ProcessAddressVerification` with the expected fields coming from the webhook.
+2. Created the `AddressVerificationRejected` event.
+3. Created the `AddressVerificationSuccess` event.
+4. Updated the `Profile` entity to reduce the new events and add new fields.
+5. Updated the `ProfileReadModel` to expose the new fields.
+6. Refactored the helper functions in the `state-validation.ts` file to handle the new states.
+7. Updated the `types.ts` file to add the new required states (`KYCAddressVerified` and `KYCAddressRejected`)
+
+```mermaid
+graph TD;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
+    A[ProcessAddressVerification command] -->|"constructor"| B[AddressVerificationSuccess event]
+    A -->|"constructor"| C[AddressVerificationRejected event]
+    A -->|"isValidTransition(success)"| D[State validation]
+    A -->|"isValidTransition(rejection)"| D[State validation]
+    A -->|"read state"| E[Profile entity]
+    F[ProfileReadModel]
+    G[KYCStatus type]
+    class A,B,C green;
+    class D,E,F,G red;
+```
+
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
+| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
+| 3             | 4                     | 1         | 156       | 16          | 5              |
+
+#### Milestone 3: Conclusions
+
+In this iteration we see a few differences between the two codebases:
+
+* As we're reusing the existing `KYCController` in NestJS, we didn't add any new files. All changes required changing existing files. This required extra refactors in two files, to accomodate the new features in an idiomatic way, and this refactor introduced a breaking API change.
+* In Booster, the new use case was implemented as a brand new command, so no previous code was affected. Also, we see the pattern from the previous iteration again: all orchestration between different modules are made in the command. This means that this feature can be easily developed in isolation.
+* One detail worth noting from the NestJS project is that we, as developers, are responsible to decide whether to include new functionality in an existing controller or create a new one. This means that there's a higher variability on the application design, as some developers might decide to create new controllers for each features, and others might decide to avoid refactoring existing code despite ending up with code that's not easy to understand. In the Booster the framework, the framework architecture clearly defines how to add new functionality, making Booster projects potentially more repeatable.
+* We also refactored the state validation function in both projects, which didn't introduce API changes.
