@@ -1,1 +1,1 @@
-export type KYCStatus = 'KYCPending' | 'KYCIDVerified' | 'KYCIDRejected'
+export type KYCStatus = 'KYCPending' | 'KYCIDVerified' | 'KYCIDRejected' | 'KYCAddressVerified' | 'KYCAddressRejected'
