@@ -75,7 +75,7 @@ Minimal setup to create an empty project in which we can start adding use cases.
 
 1. Install Booster CLI and create a new project.
 
-#### Comparation
+#### Milestone 0 comparison
 
 This step is not related to the MVC vs. CQRS/ES comparison, but it's still worth noting that NestJS don't make any assumptions on how you're storing the data, so it requires some extra steps like chosing an ORM, installing the library and configuring it to use your database of choice. Booster is more opinionated, so it comes with a pre-configured environment in which you can start working right away with no configuration at all.
 
@@ -125,7 +125,7 @@ graph TD;
     class A,B,C,D,E green
 ```
 
-#### Comparation
+#### Milestone 1 comparison
 
 Comparing the lists for this initial use case, we can see that the Booster Framework already requires fewer steps to implement the profile creation feature. Also, the steps in Booster are more focused on the business logic and require less boilerplate code, making it simpler to reason about the system. The NestJS implementation involves more setup and configuration steps, which may not directly relate to the core business logic of the feature. It's noticeable that even when this is the first use case implemented in the application, the NestJS project already required a small change in pre-existing code.
 
@@ -190,8 +190,64 @@ graph TD;
     class D,F,G red;
 ```
 
-#### Comparation
+#### Milestone 2 comparison
 
 Again, Booster Framework requires one step less than NestJS, but more importantly, the changes in Booster are more semantic and closer to business language; all files created in Booster represent specific business concepts, while the NestJS implementation files are more related to framework structural artifacts.
 
 From a code organization perspective, Booster's approach provides a clear separation of concerns, as each command or event-related functionality is handled by separate files or functions, and each artifact in our project is centered on a single specific goal while some files in the MVC implementation are required just to manage the project's structure. This makes it easier to reason about the code.
+
+### Milestone 3: Address Verification
+
+In this milestone, we focus on implementing the address verification process. Just like the ID verification process, we'll send the user's address along with relevant documents to an external verification service. This service will then provide us with either a success or rejection status based on the address verification outcome. We must update the profile's `KYCStatus` to reflect this result. In addition to processing the webhook, our implementation is also responsible for ensuring the validity of transitions between different `KYCStatus` states.
+
+#### NestJS implementation steps ([e4e0b98](https://github.com/boostercloud/kyc-example/commit/e4e0b987c9d3436b770ede0345689e42a4e626ee))
+
+1. Refactor the `KYCController` to separate ID verification and address verification webhook handlers.
+2. Refactor the `KYCService` to create separate methods for handling ID verification and address verification webhook messages.
+3. Update the `webhook-message.interface.ts` file to rename the existing interface of the ID verification webhook schema and add a new one for address verification.
+4. Update the `Profile` file to add new valid states to the `KYCStatus` type for address verification (`KYCAddressVerified` and `KYCAddressRejected`) as well as new fields to keep track of validation.
+5. Refactored the `ProfileService` to better handle address verification status transitions.
+
+```mermaid
+graph TD;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    A[KYCController] --> B[KYCService]
+    A --> C[webhook message interface]
+    B --> D[ProfileService]
+    B --> C
+    D --> E[Profile]
+    class A,B,C,D,E red;
+```
+
+#### Booster implementation steps ([3c90c1f](https://github.com/boostercloud/kyc-example/commit/3c90c1f1d6f5c939486fd107fa9ebfe59e0f209a))
+
+1. Create the command `ProcessAddressVerification` with the expected fields coming from the webhook.
+2. Created the `AddressVerificationRejected` event.
+3. Created the `AddressVerificationSuccess` event.
+4. Updated the `Profile` entity to reduce the new events and add new fields.
+5. Updated the `ProfileReadModel` to expose the new fields.
+6. Refactored the helper functions in the `state-validation.ts` file to handle the new states.
+7. Updated the `types.ts` file to add the new required states (`KYCAddressVerified` and `KYCAddressRejected`)
+
+```mermaid
+graph TD;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
+    A[ProcessAddressVerification] --> B[AddressVerificationSuccess]
+    A --> C[AddressVerificationRejected]
+    A --> D[State validation]
+    A --> E[Profile]
+    E --> B
+    E --> C
+    E --> G[KYCStatus]
+    F[ProfileReadModel] --> E
+    F --> G
+    class A,B,C green;
+    class D,E,F,G red;
+```
+
+#### Milestone 3 comparison
+
+In this iteration, fewer files required modification in the NestJS project, but all changes were updates to existing files. We needed to refactor three files to resolve a name conflict with the pre-existing `/webhook` endpoint, which introduced a breaking change. In the Booster project, a minor refactor of a helper function was necessary, but it did not result in any breaking API changes.
+
+With better planning, we might have avoided the breaking API change in the NestJS project. However, it is common for MVC designs to require modifications to existing code when adding new use cases. On the other hand, we can observe that adding a new use case in Booster involves creating new commands and events and updating the entity to accommodate the effects of new events. In the CQRS/ES model, all changes are confined within the context of the affected entities, and actions are decoupled from the entities, allowing them to be created independently. In the NestJS project, we must decide whether to include new functionality in an existing controller or create a new one. Furthermore, when two resources need to collaborate, we need to introduce changes across multiple services so, as the code becomes more complex, it becomes more likely that we need to change existing working code.
