@@ -65,6 +65,11 @@ We will divide the project in 5 major milestones:
     * Obtain information about user's family members, particularly those who may have political influence or connections.
     * Collect information about the user's occupation, employer, and source of income.
 
+6. Ongoing monitoring:
+
+    * Continuously monitor the user's account activity to identify any unusual or suspicious transactions.
+    * Conduct periodic reviews of the user's information and update the risk assessment accordingly.
+
 ### Repository Structure
 
 You'll find the full code of both NestJS and Booster projects in the corresponding folders:
@@ -284,3 +289,78 @@ In this iteration we see a few differences between the two codebases:
 * In Booster, the new use case was implemented as a brand new command, so no previous code was affected. Also, we see the pattern from the previous iteration again: all orchestration between different modules are made in the command. This means that this feature can be easily developed in isolation.
 * One detail worth noting from the NestJS project is that we, as developers, are responsible to decide whether to include new functionality in an existing controller or create a new one. This means that there's a higher variability on the application design, as some developers might decide to create new controllers for each features, and others might decide to avoid refactoring existing code despite ending up with code that's not easy to understand. In the Booster the framework, the framework architecture clearly defines how to add new functionality, making Booster projects potentially more repeatable.
 * We also refactored the state validation function in both projects, which didn't introduce API changes.
+
+### Milestone 4: Background check
+
+In this milestone we will simulate an automated background check process. When the profile reaches the state `KYCAddressVerified`, we will make a series of simulated requests to the OFAC (Office of Foreign Assets Control) and the PEP (Political Exposed Person) databases to check if the user is in any of these lists. If the user is not on these lists, it will be set in the state `KYCBackgroundCheckPassed` automatically, but if they're present in any of these lists, it will be moved to a `KYCBackgroundCheckRequiresManualReview` state that a human will have to resolve. We will then expose a new endpoint to allow a human reviewer sending the final veredict, which can pass the user to either the `KYCBackgroundCheckPassed` or the `KYCBackgroundCheckRejected` state.
+
+#### NestJS implementation steps ([b5371fa](https://github.com/boostercloud/kyc-example/commit/b5371faf11d34b4afa253d92bf909e4c2eab7b69))
+
+1. Minor change in `AppModule` to enable environment variables.
+2. Renamed and updated the file that holds the KYC API messages, now named `API Messages interfaces`.
+3. Updated the `KYCController` to add a new `/submit-manual-background-check` endpoint.
+4. Minor update in the `KYCModule` to enable access to environment variables.
+5. Changed the `handleAddressVerification` method in `KYCService` to chain the background check after the address has been validated and added all the logic needed to perform the corresponding HTTP calls to the simulated external services.
+6. Changed the `Profile` entity file to add the new states and fields.
+7. Changed the `ProfileService` to handle the new states.
+
+```mermaid
+graph TD;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    A[AppModule]
+    C[API Messages Interface]
+    B[KYCController] -->|"submitManualBackgroundCheck"| D[KYCService]
+    D -->|"manual update(BG check passed)"| F[ProfileService]
+    D -->|"manual update(BG check rejected)"| F[ProfileService]
+    D -->|"automated update(BG check passed)"| F[ProfileService]
+    D -->|"automated update(needs manual check)"| F[ProfileService]
+    G[Profile]
+    E[KYCModule]
+    class A,B,C,D,E,F,G red;
+```
+
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
+| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
+| 0             | 7                     | 0         | 252       | 88          | 5              |
+
+#### Booster implementation steps ([b87e175](https://github.com/boostercloud/kyc-example/commit/b87e175b9c2a393848787f5dcaaf2e5d55cbee2e))
+
+1. Changed the `CreateProfile command` signature to accept new fields.
+2. Created a new `SubmitBackgroundCheck command` to let reviewers submit manual background check results.
+3. Changed the `state-validation.ts` file to handle the new states.
+4. Changed the `KYCStatus type` to include the new states (`KYCBackgroundCheckPassed`, `KYCBackgroundCheckRequiresManualReview` and `KYCBackgroundCheckRejected`).
+5. Changed the `Profile entity` to include the new fields and reduce the new events.
+6. Created the `TriggerBackgroundCheck event handler` to handle the automated background check after the event `AddressVerificationSuccess` happens.
+7. Created the `BackgroundCheckManualReviewRequired` event to represent an unconclysive automated background check.
+8. Created the `BackgroundCheckPassed` event to represent that the profile passed the background check.
+9. Created the `BackgroundCheckRejected` event to represent that a profile was rejected.
+10. Changed the `ProfileCreated event` to include the extra fields for the profile.
+11. Changed the `ProfileReadModel` to include the extra fields added by this use case.
+
+```mermaid
+graph TD;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
+    A[CreateProfile command];
+    B[SubmitBackgroundCheck command] -->|"read profile"| C["Profile entity"]
+    B -->|"isValidTransition(passed)"| D["State Validation"]
+    B -->|"isValidTransition(rejected)"| D["State Validation"]
+    B -->|"constructor"| E["BackgroundCheckPassed event"]
+    B -->|"constructor"| F["BackgroundCheckRejected event"]
+    G["KYCStatus type"]
+    H["TriggerBackgroundCheck event handler"] -->|"read profile"| C
+    H -->|"constructor"| E
+    H -->|"constructor"| K["BackgroundCheckManualReviewRequired event"]
+    I["ProfileCreated event"]
+    J["ProfileReadModel"]
+    class A,C,D,G,I,J red;
+    class B,E,F,H,K green;
+```
+
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
+| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
+| 5             | 6                     | 0         | 328       | 22          | 8              |
+
+#### Milestone 4: Conclusions
+
+In this milestone we implemented a more complicated scenario that had two new features, so the amount of code needed was noticeably higher in both projects than in previous iterations. The NestJS project shows that the new features could have been implemented touching fewer files, but that also means that these files accumulate more responsibility. In the Booster project, we can see how, once more, the features are relatively contained in the new `SubmitBackgroundCheck command` and the `TriggerBackgroundCheck event handler`. Each feature's business logic is fully written in the command and the event handler, so the responsibility of each class is more clearly defined. While the Booster implementation has more moving pieces, it's also true that all new code has been implemented in new independent files and both the number of files changes and the ratio between lines of code added vs lines of code deleted are smaller in Booster.
