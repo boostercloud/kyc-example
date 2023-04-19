@@ -251,3 +251,32 @@ graph TD;
 In this iteration, fewer files required modification in the NestJS project, but all changes were updates to existing files. We needed to refactor three files to resolve a name conflict with the pre-existing `/webhook` endpoint, which introduced a breaking change. In the Booster project, a minor refactor of a helper function was necessary, but it did not result in any breaking API changes.
 
 With better planning, we might have avoided the breaking API change in the NestJS project. However, it is common for MVC designs to require modifications to existing code when adding new use cases. On the other hand, we can observe that adding a new use case in Booster involves creating new commands and events and updating the entity to accommodate the effects of new events. In the CQRS/ES model, all changes are confined within the context of the affected entities, and actions are decoupled from the entities, allowing them to be created independently. In the NestJS project, we must decide whether to include new functionality in an existing controller or create a new one. Furthermore, when two resources need to collaborate, we need to introduce changes across multiple services so, as the code becomes more complex, it becomes more likely that we need to change existing working code.
+
+### Milestone 4: Background check
+
+In this milestone we will simulate an automated background check process. When the profile reaches the state `KYCAddressVerified`, we will make a series of simulated requests to the OFAC (Office of Foreign Assets Control) and the PEP (Political Exposed Person) databases to check if the user is in any of these lists. If the user is not on these lists, it will be set in the state `KYCBackgroundCheckPassed` automatically, but if they're present in any of these lists, it will be moved to a `KYCBackgroundCheckRequiresManualReview` state that a human will have to resolve. We will then expose a new endpoint to allow the reviewer sending the final veredict, which can pass the user to either the `KYCBackgroundCheckPassed` or the `KYCBackgroundCheckRejected` state.
+
+#### NestJS implementation steps ([ed012a1](https://github.com/boostercloud/kyc-example/commit/ed012a1dc86a42519c66a85d1090d612ac947456))
+
+1. Minor change in the `AppModule` to enable environment variables.
+2. Renamed and updated the file that holds the KYC API messages, now named `API Messages interfaces`.
+3. Updated the `KYCController` to add a new `/submit-manual-background-check` endpoint.
+4. Minor update in the `KYCModule` to enable access to environment variables.
+5. Changed the `handleAddressVerification` method in `KYCService` to chain the background check after the address has been validated and added all the logic needed to perform the corresponding HPPT calls to the simulated external services.
+6. Changed the `Profile` entity file to add the new states and fields.
+7. Changed the `ProfileService` to handle the new states.
+
+```mermaid
+graph TD;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    A[AppModule]
+    B[KYCController] --> C[API Messages Interface]
+    B --> D[KYCService]
+    D --> C
+    D --> F[ProfileService]
+    D --> G[Profile]
+    F --> G
+    E[KYCModule] --> D
+    E --> B
+    class A,B,C,D,E,F,G red;
+```
