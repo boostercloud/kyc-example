@@ -60,3 +60,10 @@ export interface AddressVerificationWebhookMessage {
   result: 'success' | 'rejected';
   timestamp: string;
 }
+
+export interface ManualBackgroundCheckMessage {
+  userId: string;
+  validatorId: string;
+  resolution: 'passed' | 'rejected';
+  timestamp: string;
+}

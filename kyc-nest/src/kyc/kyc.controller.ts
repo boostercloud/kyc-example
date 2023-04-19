@@ -3,7 +3,8 @@ import { KYCService } from './kyc.service';
 import {
   IDVerificationWebhookMessage,
   AddressVerificationWebhookMessage,
-} from './webhook-message.interface';
+  ManualBackgroundCheckMessage,
+} from './api-messages.interface';
 
 @Controller('kyc')
 export class KYCController {
@@ -21,5 +22,12 @@ export class KYCController {
     @Body() message: AddressVerificationWebhookMessage,
   ): Promise<void> {
     await this.kycService.handleAddressVerificationWebhook(message);
+  }
+
+  @Post('submit-manual-background-check')
+  async submitManualBackgroundCheck(
+    @Body() payload: ManualBackgroundCheckMessage,
+  ): Promise<void> {
+    await this.kycService.submitManualBackgroundCheck(payload);
   }
 }

@@ -5,7 +5,10 @@ export type KYCStatus =
   | 'KYCIDVerified'
   | 'KYCIDRejected'
   | 'KYCAddressVerified'
-  | 'KYCAddressRejected';
+  | 'KYCAddressRejected'
+  | 'KYCBackgroundCheckPassed'
+  | 'KYCBackgroundCheckRequiresManualReview'
+  | 'KYCBackgroundCheckRejected';
 
 @Entity()
 export class Profile {
@@ -30,8 +33,14 @@ export class Profile {
   @Column()
   zipCode: string;
 
+  @Column({ default: 'unknown' })
+  country: string;
+
   @Column()
   dateOfBirth: Date;
+
+  @Column({ default: 'unknown' })
+  nationality: string;
 
   @Column()
   phoneNumber: string;
@@ -65,4 +74,16 @@ export class Profile {
 
   @Column({ nullable: true })
   addressRejectedAt?: string;
+
+  @Column({ nullable: true })
+  backgroundCheckPassedAt?: string;
+
+  @Column({ nullable: true })
+  backgroundCheckTriedAt?: string;
+
+  @Column({ nullable: true })
+  backgroundCheckManualValidatorId?: string;
+
+  @Column({ nullable: true })
+  backgroundCheckRejectedAt?: string;
 }
