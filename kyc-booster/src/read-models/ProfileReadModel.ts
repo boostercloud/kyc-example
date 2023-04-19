@@ -15,8 +15,10 @@ export class ProfileReadModel {
     readonly city: string,
     readonly state: string,
     readonly zipCode: string,
+    readonly country: string,
     readonly dateOfBirth: string,
     readonly phoneNumber: string,
+    readonly nationality: string,
     readonly email: string,
     readonly kycStatus: KYCStatus,
     readonly ssn?: string,
@@ -26,7 +28,11 @@ export class ProfileReadModel {
     readonly idRejectedAt?: string,
     readonly addressVerificationId?: UUID,
     readonly addressVerifiedAt?: string,
-    readonly addressRejectedAt?: string
+    readonly addressRejectedAt?: string,
+    readonly backgroundCheckPassedAt?: string,
+    readonly backgroundCheckTriedAt?: string,
+    readonly backgroundCheckValidatorId?: UUID | 'auto',
+    readonly backgroundCheckRejectedAt?: string,
   ) {}
 
   @Projects(Profile, 'id')
@@ -39,8 +45,10 @@ export class ProfileReadModel {
       entity.city,
       entity.state,
       entity.zipCode,
+      entity.country,
       entity.dateOfBirth,
       entity.phoneNumber,
+      entity.nationality,
       entity.email,
       entity.kycStatus,
       entity.ssn,
@@ -50,7 +58,11 @@ export class ProfileReadModel {
       entity.idRejectedAt,
       entity.addressVerificationId,
       entity.addressVerifiedAt,
-      entity.addressRejectedAt
+      entity.addressRejectedAt,
+      entity.backgroundCheckPassedAt,
+      entity.backgroundCheckTriedAt,
+      entity.backgroundCheckValidatorId,
+      entity.backgroundCheckRejectedAt,
     )
   }
 }

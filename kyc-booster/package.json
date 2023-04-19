@@ -4,32 +4,33 @@
   "version": "0.1.0",
   "author": "Javier Toledo",
   "dependencies": {
-    "tslib": "^2.4.0",
-    "@boostercloud/framework-core": "^1.7.0",
-    "@boostercloud/framework-types": "^1.7.0",
     "@boostercloud/framework-common-helpers": "^1.7.0",
-    "@boostercloud/framework-provider-aws": "^1.7.0"
+    "@boostercloud/framework-core": "^1.7.0",
+    "@boostercloud/framework-provider-aws": "^1.7.0",
+    "@boostercloud/framework-types": "^1.7.0",
+    "tslib": "^2.4.0"
   },
   "devDependencies": {
+    "@boostercloud/framework-provider-aws-infrastructure": "^1.7.0",
     "@boostercloud/framework-provider-local": "^1.7.0",
     "@boostercloud/framework-provider-local-infrastructure": "^1.7.0",
     "@boostercloud/metadata-booster": "^1.7.0",
-    "@boostercloud/framework-provider-aws-infrastructure": "^1.7.0",
-    "rimraf": "^3.0.1",
+    "@types/jsonwebtoken": "^8.5.1",
+    "@types/mocha": "8.2.2",
+    "@types/node": "16.11.7",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
+    "dotenv": "^16.0.3",
     "eslint": "7.26.0",
     "eslint-config-prettier": "8.3.0",
     "eslint-plugin-prettier": "3.4.0",
     "mocha": "8.4.0",
-    "@types/mocha": "8.2.2",
-    "@types/jsonwebtoken": "^8.5.1",
     "nyc": "15.1.0",
-    "prettier":  "2.3.0",
-    "typescript": "4.7.4",
+    "prettier": "2.3.0",
+    "rimraf": "^3.0.1",
     "ts-node": "9.1.1",
-    "@types/node": "16.11.7",
-    "ttypescript": "1.5.13"
+    "ttypescript": "1.5.13",
+    "typescript": "4.7.4"
   },
   "engines": {
     "node": ">=14.0.0"
