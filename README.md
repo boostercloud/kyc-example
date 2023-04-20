@@ -280,3 +280,7 @@ graph TD;
     E --> B
     class A,B,C,D,E,F,G red;
 ```
+### Milestone 5: Family and occupation risk assessment
+
+In this milestone, we'll add occupation information to the existing profiles and introduce the concept of relative, adding a 1-M relationship. We're going to assume that all this information will be vetted manually by the organization employee, so we'll just implement collection of the data and its exposure via API.
+
