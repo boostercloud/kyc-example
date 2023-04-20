@@ -42,6 +42,7 @@ export class ProfileService {
   async findById(id: string): Promise<Profile> {
     const options: FindOneOptions<Profile> = {
       where: { id },
+      relations: ['relatives'],
     };
 
     const profile = await this.profileRepository.findOne(options);

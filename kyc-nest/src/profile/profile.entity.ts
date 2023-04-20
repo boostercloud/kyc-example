@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Relative } from '../relative/relative.entity';
 
 export type KYCStatus =
   | 'KYCPending'
@@ -9,6 +10,18 @@ export type KYCStatus =
   | 'KYCBackgroundCheckPassed'
   | 'KYCBackgroundCheckRequiresManualReview'
   | 'KYCBackgroundCheckRejected';
+
+export enum IncomeSource {
+  Salary = 'Salary',
+  Dividends = 'Dividends',
+  BusinessIncome = 'Business Income',
+  Freelance = 'Freelance',
+  RentalIncome = 'Rental Income',
+  Royalties = 'Royalties',
+  Investments = 'Investments',
+  Pensions = 'Pensions',
+  SocialSecurity = 'Social Security',
+}
 
 @Entity()
 export class Profile {
@@ -54,6 +67,15 @@ export class Profile {
   @Column({ nullable: true })
   tin?: string;
 
+  @Column({ nullable: true })
+  occupation?: string;
+
+  @Column({ nullable: true })
+  employer?: string;
+
+  @Column({ nullable: true, type: 'varchar' })
+  sourceOfIncome?: IncomeSource;
+
   @Column({ default: 'KYCPending' })
   kycStatus: KYCStatus;
 
@@ -86,4 +108,7 @@ export class Profile {
 
   @Column({ nullable: true })
   backgroundCheckRejectedAt?: string;
+
+  @OneToMany(() => Relative, (relative) => relative.profile, { cascade: true })
+  relatives: Relative[];
 }

@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProfileModule } from './profile/profile.module';
+import { RelativeModule } from './relative/relative.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { KycModule } from './kyc/kyc.module';
 
@@ -16,6 +17,7 @@ import { KycModule } from './kyc/kyc.module';
       synchronize: true,
     }),
     ProfileModule,
+    RelativeModule,
     KycModule,
   ],
   controllers: [AppController],
