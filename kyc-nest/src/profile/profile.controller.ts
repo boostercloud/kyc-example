@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Body } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body, Put } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { Profile } from './profile.entity';
 
@@ -9,6 +9,14 @@ export class ProfileController {
   @Post()
   async create(@Body() profileData: Profile): Promise<Profile> {
     return this.profileService.create(profileData);
+  }
+
+  @Put(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() profileData: Partial<Profile>,
+  ): Promise<void> {
+    return this.profileService.update(id, profileData);
   }
 
   @Get()
