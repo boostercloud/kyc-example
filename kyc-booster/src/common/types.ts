@@ -7,3 +7,14 @@ export type KYCStatus =
   | 'KYCBackgroundCheckPassed'
   | 'KYCBackgroundCheckRequiresManualReview'
   | 'KYCBackgroundCheckRejected';
+
+export type IncomeSource =  
+  | 'Salary' 
+  | 'Dividends' 
+  | 'BusinessIncome' 
+  | 'Freelance' 
+  | 'RentalIncome' 
+  | 'Royalties' 
+  | 'Investments' 
+  | 'Pensions' 
+  | 'SocialSecurity' 

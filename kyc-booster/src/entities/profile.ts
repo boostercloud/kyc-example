@@ -1,7 +1,7 @@
 import { UUID } from '@boostercloud/framework-types'
 import { Entity, Reduces } from '@boostercloud/framework-core'
 import { ProfileCreated } from '../events/profile-created'
-import { KYCStatus } from '../common/types'
+import { KYCStatus, IncomeSource } from '../common/types'
 import { IDVerificationSuccess } from '../events/id-verification-success'
 import { IDVerificationRejected } from '../events/id-verification-rejected'
 import { AddressVerificationSuccess } from '../events/address-verification-success'
@@ -9,6 +9,7 @@ import { AddressVerificationRejected } from '../events/address-verification-reje
 import { BackgroundCheckPassed } from '../events/background-check-passed';
 import { BackgroundCheckRejected } from '../events/background-check-rejected'
 import { BackgroundCheckManualReviewRequired } from '../events/background-check-manual-review-required';
+import { ProfileOcupationDataAdded } from '../events/profile-ocupation-data-added'
 
 @Entity
 export class Profile {
@@ -38,6 +39,9 @@ export class Profile {
     readonly backgroundCheckTriedAt?: string,
     readonly backgroundCheckValidatorId?: UUID | 'auto',
     readonly backgroundCheckRejectedAt?: string,
+    readonly occupation?: string,
+    readonly employer?: string,
+    readonly sourceOfIncome?: IncomeSource,
   ) {}
 
   @Reduces(ProfileCreated)
@@ -107,6 +111,15 @@ export class Profile {
     }, currentProfile)
   }
 
+  @Reduces(ProfileOcupationDataAdded)
+  public static onProfileOcupationDataAdded(event: ProfileOcupationDataAdded, currentProfile?: Profile): Profile {
+    return Profile.nextProfile({
+      occupation: event.occupation,
+      employer: event.employer,
+      sourceOfIncome: event.sourceOfIncome,
+    }, currentProfile)
+  }
+
   private static nextProfile(fields: Partial<Profile>, currentProfile?: Profile): Profile {
     if (!currentProfile) {
       throw new Error('Cannot reduce an event over a non-existing profile')
@@ -137,6 +150,9 @@ export class Profile {
       fields.backgroundCheckTriedAt || currentProfile.backgroundCheckTriedAt,
       fields.backgroundCheckValidatorId || currentProfile.backgroundCheckValidatorId,
       fields.backgroundCheckRejectedAt || currentProfile.backgroundCheckRejectedAt,
+      fields.occupation || currentProfile.occupation,
+      fields.employer || currentProfile.employer,
+      fields.sourceOfIncome || currentProfile.sourceOfIncome,
     )
   }
 }
