@@ -18,9 +18,9 @@ export class TriggerBackgroundCheck {
     const passedPEPTest = await this.checkPEPListInclusion(profile);
 
     if (passedOFACTest && passedPEPTest) {
-      register.events(new BackgroundCheckPassed(event.profileId, 'auto', event.timestamp));
+      register.events(new BackgroundCheckPassed(event.profileId, 'auto', new Date().toTimeString()));
     } else {
-      register.events(new BackgroundCheckManualReviewRequired(event.profileId, event.timestamp))
+      register.events(new BackgroundCheckManualReviewRequired(event.profileId, new Date().toTimeString()))
     }
   }
 
