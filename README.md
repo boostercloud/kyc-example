@@ -364,3 +364,71 @@ graph TD;
 #### Milestone 4: Conclusions
 
 In this milestone we implemented a more complicated scenario that had two new features, so the amount of code needed was noticeably higher in both projects than in previous iterations. The NestJS project shows that the new features could have been implemented touching fewer files, but that also means that these files accumulate more responsibility. In the Booster project, we can see how, once more, the features are relatively contained in the new `SubmitBackgroundCheck command` and the `TriggerBackgroundCheck event handler`. Each feature's business logic is fully written in the command and the event handler, so the responsibility of each class is more clearly defined. While the Booster implementation has more moving pieces, it's also true that all new code has been implemented in new independent files and both the number of files changes and the ratio between lines of code added vs lines of code deleted are smaller in Booster.
+
+One detail worth noticing is that as the background check must be tried automatically after the address has been verified, these use cases are chained. In NestJS, the background check is called from the same controller method that checks the address verification. This design has two flaws: one is that both use cases are performed synchronously in the context of the same HTTP request, so failure scenarios or partial successes can become hard to manage afterwards (i.e. as the system is designed, it's not easy to retry the background check independently). Booster allows, with the use of event handlers, to listen to specific changes and react to them with extra independent actions. This doesn't require any changes in the original feature, the event handlers will be handled asynchronously, and they can be retried in isolation.
+
+### Milestone 5: Family and occupation risk assessment
+
+In this milestone, we'll add occupation information to the existing profiles and introduce the concept of relative, adding a 1-M relationship. We're going to assume that all this information will be vetted manually by the organization employee, so we'll just implement collection of the data and its exposure via API.
+
+#### NestJS implementation steps ([26d30f1](https://github.com/boostercloud/kyc-example/commit/26d30f1cf3a766c4c18e6209fc9ef25404303b4c)))
+
+1. Changed the `AppModule` to include the new `RelativeModule`.
+2. Changed the `ProfileController` to handle a new endpoint to update an existing profile.
+3. Changed the `Profile` entity to include the new fields and add the `relatives` 1-M relationship.
+4. Changed the `ProfileService`'s `findById` method to also return the relatives related to the requested profile.
+5. Created a new `RelativeController` to handle the relatives creation (scoped to a specific profile).
+6. Created the new `Relative` entity, including the inverse M-1 relationship with the profile.
+7. Created a new `RelativeModule` to connect all the relative pieces together.
+8. Created the `RelativeService` that implements the creation of relatives associated with a profile.
+
+```mermaid
+graph TD;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
+    A["AppModule"]
+    B["ProfileController"] -->|"update"| C["ProfileService"]
+    D["Profile"]
+    E["RelativeController"] -->|"create"| F["RelativeService"]
+    G["Relative"]
+    F -->|"findById"| C
+    class A,B,C,D red;
+    class E,F green;
+```
+
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
+| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
+| 4             | 4                     | 0         | 118       | 2           | 3              |
+
+#### Booster implementation steps ([f963d88](https://github.com/boostercloud/kyc-example/commit/f963d88348573586ed24cde31a928cf28a452861)))
+
+1. Created a new dedicated `AddProfileOccupationData command` that allows users submit these fields independently.
+2. Created a new `CreateRelative command` to add relatives to a specific profile.
+3. Changed the `types.ts` file to add a new `IncomeSource` type that represents valid income source options.
+4. Changed the `Profile entity` to add extra fields and reduce the `ProfileOcupationDataAdded event`.
+5. Created the `Relative` entity that reduces the `RelativeCreated event`.
+6. Created the `ProfileOcupationDataAdded event`.
+7. Created the `RelativeCreated` event.
+8. Changed the `ProfileReadModel` to show the new profile fields and the related relatives.
+
+```mermaid
+graph TD;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
+    A["AddProfileOccupationData command"] -->|"constructor"| B["ProfileOcupationDataAdded event"]
+    C["CreateRelative command"] -->|"constructor"| D["RelativeCreated event"]
+    E["types.ts"]
+    F["Profile entity"]
+    G["Relative entity"]
+    H["ProfileReadModel"]
+    class E,F,H red;
+    class A,B,C,D,G green;
+```
+
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
+| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
+| 5             | 3                     | 0         | 192       | 30          | 2              |
+
+#### Milestone 5: Conclusions
+
+This milestone involved again the implementation of two use cases: add the occupation data, and add relatives to a specific profile. They're both relatively simple use cases, so the main difference we can notice is because of the creation of a relationship between two entities (The profile and the new relative entity). In NestJS, the relationship is defined explicitly in the model, but in Booster the relation is not made explicit until the moment of building the read model. As we saw in previous iterations, in Booster the new use cases are implemented in two independent commands that are self-contained while in Nest one of the use cases is implemented in an existing controller and the other in a new one.
