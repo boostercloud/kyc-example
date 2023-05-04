@@ -39,7 +39,7 @@ Our focus is on architectural complexity, so we'll assume that the actual data v
 
 > Disclaimer: It's important to highlight that the KYC process described here is for demonstration purposes only, with the intent of illustrating architectural differences between two well-known software architectures. This example should not be taken as a reference for real-world applications. If you plan to implement a KYC process for your own organization, ensure you seek proper guidance and consult with legal and compliance experts to meet all applicable regulatory requirements.
 
-We will divide the project in 5 major milestones:
+We will divide the project in 6 major milestones:
 
 1. User registration:
 
@@ -65,7 +65,7 @@ We will divide the project in 5 major milestones:
     * Obtain information about user's family members, particularly those who may have political influence or connections.
     * Collect information about the user's occupation, employer, and source of income.
 
-6. Ongoing monitoring:
+6. Security and monitoring:
 
     * Continuously monitor the user's account activity to identify any unusual or suspicious transactions.
     * Conduct periodic reviews of the user's information and update the risk assessment accordingly.
@@ -432,3 +432,19 @@ graph TD;
 #### Milestone 5: Conclusions
 
 This milestone involved again the implementation of two use cases: add the occupation data, and add relatives to a specific profile. They're both relatively simple use cases, so the main difference we can notice is because of the creation of a relationship between two entities (The profile and the new relative entity). In NestJS, the relationship is defined explicitly in the model, but in Booster the relation is not made explicit until the moment of building the read model. As we saw in previous iterations, in Booster the new use cases are implemented in two independent commands that are self-contained while in Nest one of the use cases is implemented in an existing controller and the other in a new one.
+
+### Milestone 6: Security and monitoring
+
+In this milestone, we won't modify the implementation, as security and monitoring topics often extend beyond the scope of a specific service. However, it's important to highlight and analyze security and monitoring aspects and how they apply to the NestJS and Booster implementations.
+
+In the context of a KYC process with a focus on security and monitoring, the event-sourcing approach offers several advantages, such as proactive monitoring, complete audit trail, and fine-grained access control.
+
+1. **Proactive monitoring**: With event-sourcing, every user action generates an event that can be forwarded to an event aggregation platform for real-time analysis. This allows us to use machine learning models or other techniques to proactively monitor user activity and identify unusual or suspicious transactions.
+
+2. **Complete audit trail**: Event-sourcing inherently stores incremental changes to the user's profile, providing a comprehensive audit trail and facilitating regulatory compliance. In contrast, the MVC design would overwrite the previous states, making it difficult to reconstruct the user's profile history.
+
+3. **Fine-grained access control**: Booster Framework allows for a more granular approach to access control during the KYC process. By decoupling the API from the entities, we can define specific commands for different stages of the profile update process. This enforces a strict workflow and ensures that users cannot bypass the designed process.
+
+In a MVC implementation, these techniques can be also implemented, but require an extra effort of the development team. In order to have a permanent trail of changes, you would need to extract the implicit events and send them to the events aggregation platform. One way to do this would be to explicitly log the events after every database write in your code, which is error prone (if a developer forgets to record the corresponding events for an action, the data is lost forever). Another way is implementing a CDC process in the database that records every change, which is more exhaustive than implementing it in code, but it loses the semantics of the change.
+
+Regarding access control, the MVC most idiomatic approach is to expose create/update endpoints for each entity and handle the special cases and workflows in the controller/service implementation. For instance, if we want to restrict the fields sent during profile creation to a specific subset of the profile entity's fields, we would need to implement that with a series of conditionals in the service that filter out the extra fields or rejects a request depending on the fields sent and the current state of the profile. Again, this is perfectly doable and it's a common way to solve it in MVC applications, but it's easier to make a mistake than when you have a specific endpoint for each command.
