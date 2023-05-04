@@ -448,3 +448,46 @@ In the context of a KYC process with a focus on security and monitoring, the eve
 In a MVC implementation, these techniques can be also implemented, but require an extra effort of the development team. In order to have a permanent trail of changes, you would need to extract the implicit events and send them to the events aggregation platform. One way to do this would be to explicitly log the events after every database write in your code, which is error prone (if a developer forgets to record the corresponding events for an action, the data is lost forever). Another way is implementing a CDC process in the database that records every change, which is more exhaustive than implementing it in code, but it loses the semantics of the change.
 
 Regarding access control, the MVC most idiomatic approach is to expose create/update endpoints for each entity and handle the special cases and workflows in the controller/service implementation. For instance, if we want to restrict the fields sent during profile creation to a specific subset of the profile entity's fields, we would need to implement that with a series of conditionals in the service that filter out the extra fields or rejects a request depending on the fields sent and the current state of the profile. Again, this is perfectly doable and it's a common way to solve it in MVC applications, but it's easier to make a mistake than when you have a specific endpoint for each command.
+
+## Results and Conclusions
+
+We have gone through the implementation of the same KYC use cases using NestJS (an MVC-based framework) and Booster Framework (an event-sourced and CQRS-based framework), comparing the design and values obtained from each implementation.
+
+To illustrate the conclusions, we put together a summary table that showcases each milestone as well as the aggregated statistics of each implementation:
+
+### NestJS implementation results
+
+| Milestone | Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
+| --------- | ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
+| 1         | 4             | 1                     | 0         | 120       | 0           | 3              |
+| 2         | 4             | 4                     | 0         | 126       | 1           | 3              |
+| 3         | 0             | 5                     | 3         | 116       | 18          | 4              |
+| 4         | 0             | 7                     | 0         | 252       | 88          | 5              |
+| 5         | 4             | 4                     | 0         | 118       | 2           | 3              |
+| **TOTAL** | **12**        | **21**                | **3**     | **732**   | **109**     | **18**         |
+
+### Booster implementation results
+
+| Milestone | Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
+| --------- | ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
+| 1         | 5             | 0                     | 0         | 113       | 0           | 1              |
+| 2         | 4             | 3                     | 0         | 116       | 2           | 5              |
+| 3         | 3             | 4                     | 1         | 156       | 16          | 5              |
+| 4         | 5             | 6                     | 0         | 328       | 22          | 8              |
+| 5         | 5             | 3                     | 0         | 192       | 30          | 2              |
+| **TOTAL** | **22**        | **16**                | **1**     | **905**   | **70**      | **21**         |
+
+While the amount of data collected is not strictly enough for a demonstration, we can make the following observations:
+
+1. As expected, Booster projects involve the creation of more new files, while NestJS projects tend to require more file updates. This implies that Booster typically encapsulates new functionality in new files, resulting in a more modular design.
+2. The amount of refactorings needed in NestJS projects is higher compared to Booster. As the code in NestJS is organized structurally instead of by functionality, we find situations that require changing pre-existing code to keep the code clean and idiomatic, so new use cases might make us rethink previously working code more often.
+3. Lines of code are not usually a good metric to measure amount of work or code complexity because it can be influenced by factors like code style or tools used, but taking into account that we've followed the same code style and implemented the same exact use cases, it's interesting to see the difference in the ratio of lines of code added vs lines of code deleted. In NestJS, the number of new lines is ~6,72 times the number of deleted lines, compared to ~13 times in Booster. All our work has been related to adding new features without deleting any prior functionality, so most if not all deleted lines must be related to changes in pre-existing code. This illustrates that in order to add a new feature, it's almost twice likely to make changes in existing code in the MVC project than in the event-sourcing project, which is very interesting.
+4. The number of links (explicit calls between files) in Booster is greater than the numer of links introduced in the NestJS project. This matches the fact that we're distributing code responsabilities better (each file has a single well-defined purpose). But while this could be understood as a signal of higher overall complexity, it's interesting to notice the direction of the links (always from commands/event handlers to other resources), which indicates that all business code required for solving a use case is self-contained in the corresponding command/event handler instead of being distributed among several layers of code.
+
+Going beyond data, this experiment also illustrates some of the well-known benefits of event sourcing:
+
+In terms of security and monitoring, the event-sourced approach offers a natural and efficient way to implement proactive monitoring, ensure a comprehensive audit trail, and enforce fine-grained access control. Although these features can also be implemented in an MVC framework like NestJS, the event-sourced architecture within Booster streamlines their implementation and reduces the chances of human error.
+
+Also, as we saw in the case of the automated background check, the distributed and asyncronous nature of event sourcing significantly increases the robustness and scalability of chained processes, where a business action is triggered by one or more previous events in arbitrary complex workflows.
+
+In conclusion, while both frameworks can serve as suitable choices for implementing complex use cases like KYC processes, the CQRS+ES approach in general, and Booster Framework in particular, provides a more modular and self-contained approach where it's easier to introduce new use cases or change previous use cases without affecting unrelated code, favoring maintainability and team parallelization. But these advantages doesn't come for free; while each use case is self-contained in a command or an event handler, the CQRS+ES approach achieves this level of modularity by distributing the structure of the project in more files and requiring more calls. This, in addition to the mindset change that requires "thinking in events", could easily be perceived by most developers as a more complex or harder to handle approach, but we believe that the benefits exposed regarding maintainability and security make it totally worth betting for this approach, especially in enterprise environments where scalable teams, security, trazability and compliance with strict rules are a strong requirement.
