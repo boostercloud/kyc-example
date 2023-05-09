@@ -25,7 +25,8 @@ For each feature implemented, we will track the following quantitative data:
 1. Number of files created and number of files changed/deleted.
 2. Number of functions/classes refactored.
 3. Lines of code added and lines of code deleted.
-4. Explicit Links: Number of explicit calls added/changed to constructors/functions from a different file.
+4. Imported Files: Increase of imports (new imports - removed imports)
+5. Function calls: Number of explicit calls added/changed to functions imported from a different file.
 
 We will also summarize the changes and share impressions for each iteration, and you will find a conclusion at the end of this document. Each iteration will be pushed in a separate commit to ease detailed inspection of the work made, and allowing others to reach their own conclusions.
 
@@ -65,10 +66,10 @@ We will divide the project in 6 major milestones:
     * Obtain information about user's family members, particularly those who may have political influence or connections.
     * Collect information about the user's occupation, employer, and source of income.
 
-6. Security and monitoring:
+6. Plot twist!
 
-    * Continuously monitor the user's account activity to identify any unusual or suspicious transactions.
-    * Conduct periodic reviews of the user's information and update the risk assessment accordingly.
+    * Requirements changed and we need to skip the address verification step when the profile's owner comes from Wakanda.
+    * Additionally, we will send a welcome email when the process is finished, but wakandians will receive a promo code to buy vibranium in the nearest hardware store.
 
 ### Repository Structure
 
@@ -109,21 +110,20 @@ Profile creation is the first step in the KYC process, where the user provides t
 
 ```mermaid
 graph TD;
-    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
-    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px,color:#333;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px,color:#333;
     A[AppModule];
     B[ProfileModule];
-    C[ProfileController] -->|"create()"| D[ProfileService];
-    C -->|"findAll()"| D;
+    C[ProfileController] -->|"findAll()"| D[ProfileService];
     C -->|"findById()"| D;
     E[Profile];
     class A red;
     class B,C,D,E green;
 ```
 
-| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
-| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
-| 4             | 1                     | 0         | 120       | 0           | 3              |
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Imports | Function calls |
+| ------------- | --------------------- | --------- | --------- | ----------- | ------- | -------------- |
+| 4             | 1                     | 0         | 120       | 0           | 7       | 2              |
 
 #### Booster Framework implementation steps ([8b8b360](https://github.com/boostercloud/kyc-example/commit/8b8b36044678f8243abdcaee8e2ba820265788ff))
 
@@ -135,21 +135,22 @@ graph TD;
 
 ```mermaid
 graph TD;
-    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
-    A[CreateProfile command] -->|"constructor"| B[ProfileCreated event];
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px,color:#333;
+    A[CreateProfile command];
+    B[ProfileCreated event];
     C[Profile entity];
     D[KYCStatus type];
     E[ProfileReadModel];
     class A,B,C,D,E green;
 ```
 
-| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
-| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
-| 5             | 0                     | 0         | 113       | 0           | 1              |
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Imports | Function calls |
+| ------------- | --------------------- | --------- | --------- | ----------- | ------- | -------------- |
+| 5             | 0                     | 0         | 113       | 0           | 6       | 0              |
 
 #### Milestone 1: Conclusions
 
-For this first use case, the amount of files created, updated, and lines of code added and deleted, are similar, but we can already see how Booster adds less than a half of the links required in NestJS. The direction of the relationships are different too: in NestJS we find a tree-like structure, where the (root module) `AppModule` links the new `ProfileModule`, and then this one links together the corresponding controller, model and service. Then, the `ProfileController` uses the `ProfileService` to fulfill the requests. In Booster, we find full separation of write (`CreateProfile command`) and read (`ProfileReadModel`) pipelines, as expected due to the CQRS design, and both pipelines are solely connected by the `ProfileCreated event`.
+For this first use case, the number of files touched, the amount of limes added and the number of imports are similar, but we can see how Booster architecture implements the same functionality with no explicit function calls while in NestJS we need to explictly link the `ProfileController` handlers with the corresponding functions in the `ProfileService`. In Booster, we find full separation of concerns thanks to the fact that the different pieces only depend on the event, which is just data.
 
 ### Milestone 2: ID Verification
 
@@ -168,8 +169,8 @@ In this milestone, we implement the identity (ID) verification process. We will 
 
 ```mermaid
 graph TD;
-    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
-    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px,color:#333;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px,color:#333;
     A[AppModule];
     I[KYCModule];
     B[ProfileModule];
@@ -185,9 +186,9 @@ graph TD;
     class G,H,I,J green;
 ```
 
-| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
-| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
-| 4             | 4                     | 0         | 126       | 1           | 3              |
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Imports | Function calls |
+| ------------- | --------------------- | --------- | --------- | ----------- | ------- | -------------- |
+| 4             | 4                     | 0         | 126       | 1           | 7       | 3              |
 
 #### Booster Framework implementation steps ([4348e15](https://github.com/boostercloud/kyc-example/commit/8e15b5ccf72ef260bbb35b12a5605ebe5c970eb1))
 
@@ -201,11 +202,11 @@ graph TD;
 
 ```mermaid
 graph TD;
-    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
-    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
-    A[ProcessIDVerification command] -->|"constructor"| B[IDVerificationSuccess event];
-    A -->|"constructor"| C[IDVerificationRejected event];
-    A -->|"read data"| D[Profile entity];
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px,color:#333;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px,color:#333;
+    B[IDVerificationSuccess event];
+    C[IDVerificationRejected event];
+    A[ProcessIDVerification command] -->|"read data"| D[Profile entity];
     A -->|"isValidTransition(success)"| E[State validation];
     A -->|"isValidTransition(rejection)"| E[State validation];
     F[KYCStatus type];
@@ -214,15 +215,13 @@ graph TD;
     class D,F,G red;
 ```
 
-| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
-| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
-| 4             | 3                     | 0         | 116       | 2           | 5              |
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Imports | Function calls |
+| ------------- | --------------------- | --------- | --------- | ----------- | ------- | -------------- |
+| 4             | 3                     | 0         | 116       | 2           | 7       | 3              |
 
 #### Milestone 2: Conclusions
 
-In this scenario, the statistics are very similar. This change involved structural changes in both projects for state management. In the NestJS project, we added a new `KYCController` to handle the verification webhook using `KYCService`. Then, the `KYCService` uses the `ProfilesModule` to explicitly update the entity.
-
-In Booster, we introduced a new command that makes use of the existing entity and a new state validation function before accepting the incoming request, so all orchestration for this use case is made by the command itself, keeping the new use case self-contained. State management is handled treating the events and entities as data, so no explicit state management is needed, showing a better distribution of responsibilities.
+In this scenario, all statistics are very similar, but it's worth noticing the structure of the function calls: In NestJS, the `KYCController` calls the `KYCService`, which needs to call `ProfileService`, requiring two levels of indirection to solve the new use case. In Booster, all the new business logic is packed within the new `ProcessIDVerification command`, which loads the `Profile entity` and uses the `State validation` function, accessing directly to these modules.
 
 ### Milestone 3: Address Verification
 
@@ -238,7 +237,7 @@ In this milestone, we implement the address verification process. As we did the 
 
 ```mermaid
 graph TD;
-    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px,color:#333;
     A[KYCController] -->|"handleIdVerificationWebhook"| B[KYCService]
     A -->|"handleAddressVerificationWebhook"| B
     B -->|"update(address success)"| D[ProfileService]
@@ -248,9 +247,9 @@ graph TD;
     class A,B,C,D,E red;
 ```
 
-| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
-| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
-| 0             | 5                     | 3         | 116       | 18          | 4              |
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Imports | Function calls |
+| ------------- | --------------------- | --------- | --------- | ----------- | ------- | -------------- |
+| 0             | 5                     | 3         | 112       | 15          | 0       | 4              |
 
 #### Booster implementation steps ([727d3ce](https://github.com/boostercloud/kyc-example/commit/727d3ce6f062784250b905336bcc44d27a4c6028))
 
@@ -264,11 +263,11 @@ graph TD;
 
 ```mermaid
 graph TD;
-    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
-    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
-    A[ProcessAddressVerification command] -->|"constructor"| B[AddressVerificationSuccess event]
-    A -->|"constructor"| C[AddressVerificationRejected event]
-    A -->|"isValidTransition(success)"| D[State validation]
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px,color:#333;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px,color:#333;
+    B[AddressVerificationSuccess event]
+    C[AddressVerificationRejected event]
+    A[ProcessAddressVerification command] -->|"isValidTransition(success)"| D[State validation]
     A -->|"isValidTransition(rejection)"| D[State validation]
     A -->|"read state"| E[Profile entity]
     F[ProfileReadModel]
@@ -277,18 +276,19 @@ graph TD;
     class D,E,F,G red;
 ```
 
-| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
-| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
-| 3             | 4                     | 1         | 156       | 16          | 5              |
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Imports | Function calls |
+| ------------- | --------------------- | --------- | --------- | ----------- | ------- | -------------- |
+| 3             | 4                     | 1         | 156       | 16          | 6       | 3              |
 
 #### Milestone 3: Conclusions
 
 In this iteration we see a few differences between the two codebases:
 
-* As we're reusing the existing `KYCController` in NestJS, we didn't add any new files. All changes required changing existing files. This required extra refactors in two files, to accomodate the new features in an idiomatic way, and this refactor introduced a breaking API change.
-* In Booster, the new use case was implemented as a brand new command, so no previous code was affected. Also, we see the pattern from the previous iteration again: all orchestration between different modules are made in the command. This means that this feature can be easily developed in isolation.
-* One detail worth noting from the NestJS project is that we, as developers, are responsible to decide whether to include new functionality in an existing controller or create a new one. This means that there's a higher variability on the application design, as some developers might decide to create new controllers for each features, and others might decide to avoid refactoring existing code despite ending up with code that's not easy to understand. In the Booster the framework, the framework architecture clearly defines how to add new functionality, making Booster projects potentially more repeatable.
-* We also refactored the state validation function in both projects, which didn't introduce API changes.
+* As we're reusing the existing `KYCController` in NestJS, we didn't add any new files. All the new business logic was added to existing files. This required to apply extra refactors in two files, due to decisions made in previous iterations, and this refactor introduced a breaking API change.
+* In Booster, the new use case was implemented as a new `ProcessAddressVerification command` that, again, self-contains all the new business logic, and we didn't need to rework any previous business logic.
+* We refactored the state validation function in both projects to make it clearer, which didn't introduce any other API changes.
+
+As in the previous iteration, we find the same function calls pattern again. In NestJS we needed four function calls in two levels of indirection, while in Booster all accessed modules were accessed directly.
 
 ### Milestone 4: Background check
 
@@ -306,7 +306,7 @@ In this milestone we will simulate an automated background check process. When t
 
 ```mermaid
 graph TD;
-    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px,color:#333;
     A[AppModule]
     C[API Messages Interface]
     B[KYCController] -->|"submitManualBackgroundCheck"| D[KYCService]
@@ -319,9 +319,9 @@ graph TD;
     class A,B,C,D,E,F,G red;
 ```
 
-| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
-| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
-| 0             | 7                     | 0         | 252       | 88          | 5              |
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Imports | Function calls |
+| ------------- | --------------------- | --------- | --------- | ----------- | ------- | -------------- |
+| 0             | 7                     | 0         | 153       | 7           | 1       | 5              |
 
 #### Booster implementation steps ([b87e175](https://github.com/boostercloud/kyc-example/commit/b87e175b9c2a393848787f5dcaaf2e5d55cbee2e))
 
@@ -339,33 +339,32 @@ graph TD;
 
 ```mermaid
 graph TD;
-    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
-    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px,color:#333;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px,color:#333;
     A[CreateProfile command];
     B[SubmitBackgroundCheck command] -->|"read profile"| C["Profile entity"]
     B -->|"isValidTransition(passed)"| D["State Validation"]
     B -->|"isValidTransition(rejected)"| D["State Validation"]
-    B -->|"constructor"| E["BackgroundCheckPassed event"]
-    B -->|"constructor"| F["BackgroundCheckRejected event"]
+    E["BackgroundCheckPassed event"]
+    F["BackgroundCheckRejected event"]
     G["KYCStatus type"]
     H["TriggerBackgroundCheck event handler"] -->|"read profile"| C
-    H -->|"constructor"| E
-    H -->|"constructor"| K["BackgroundCheckManualReviewRequired event"]
+    K["BackgroundCheckManualReviewRequired event"]
     I["ProfileCreated event"]
     J["ProfileReadModel"]
     class A,C,D,G,I,J red;
     class B,E,F,H,K green;
 ```
 
-| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
-| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
-| 5             | 6                     | 0         | 328       | 22          | 8              |
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Imports | Function calls |
+| ------------- | --------------------- | --------- | --------- | ----------- | ------- | -------------- |
+| 5             | 6                     | 0         | 295       | 10          | 11      | 4              |
 
 #### Milestone 4: Conclusions
 
-In this milestone we implemented a more complicated scenario that had two new features, so the amount of code needed was noticeably higher in both projects than in previous iterations. The NestJS project shows that the new features could have been implemented touching fewer files, but that also means that these files accumulate more responsibility. In the Booster project, we can see how, once more, the features are relatively contained in the new `SubmitBackgroundCheck command` and the `TriggerBackgroundCheck event handler`. Each feature's business logic is fully written in the command and the event handler, so the responsibility of each class is more clearly defined. While the Booster implementation has more moving pieces, it's also true that all new code has been implemented in new independent files and both the number of files changes and the ratio between lines of code added vs lines of code deleted are smaller in Booster.
+In this milestone we introduced two new features, so in both projects the amount of code required was noticeably higher than in previous iterations. In the NestJS project we created no new files, meaning that these files accumulate more responsibility. In the Booster project, we can see how, once more, each feature is contained in either the new `SubmitBackgroundCheck command` or the `TriggerBackgroundCheck event handler` respectively, so the responsibility of each class is much clearly defined than in NestJS.
 
-One detail worth noticing is that as the background check must be tried automatically after the address has been verified, these use cases are chained. In NestJS, the background check is called from the same controller method that checks the address verification. This design has two flaws: one is that both use cases are performed synchronously in the context of the same HTTP request, so failure scenarios or partial successes can become hard to manage afterwards (i.e. as the system is designed, it's not easy to retry the background check independently). Booster allows, with the use of event handlers, to listen to specific changes and react to them with extra independent actions. This doesn't require any changes in the original feature, the event handlers will be handled asynchronously, and they can be retried in isolation.
+One detail worth noticing is that as the background check must be tried automatically after the address has been verified, we're chaining it within the address verification call. This design has two flaws: one is that both use cases are performed serially in the context of the same HTTP request, so failure scenarios or partial successes can become hard to manage afterwards (i.e. as the system is designed, it's not easy to retry the background check independently). Booster allows, with the use of event handlers, to listen to specific changes and react to them asynchronously as an independent action.
 
 ### Milestone 5: Family and occupation risk assessment
 
@@ -384,8 +383,8 @@ In this milestone, we'll add occupation information to the existing profiles and
 
 ```mermaid
 graph TD;
-    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
-    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px,color:#000,color:#333;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px,color:#000,color:#333;
     A["AppModule"]
     B["ProfileController"] -->|"update"| C["ProfileService"]
     D["Profile"]
@@ -393,12 +392,12 @@ graph TD;
     G["Relative"]
     F -->|"findById"| C
     class A,B,C,D red;
-    class E,F green;
+    class E,F,G green;
 ```
 
-| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
-| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
-| 4             | 4                     | 0         | 118       | 2           | 3              |
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Imports | Function calls |
+| ------------- | --------------------- | --------- | --------- | ----------- | ------- | -------------- |
+| 4             | 4                     | 0         | 118       | 2           | 11      | 3              |
 
 #### Booster implementation steps ([f963d88](https://github.com/boostercloud/kyc-example/commit/f963d88348573586ed24cde31a928cf28a452861)))
 
@@ -413,10 +412,12 @@ graph TD;
 
 ```mermaid
 graph TD;
-    classDef red fill:#ff6666,stroke:#333,stroke-width:4px;
-    classDef green fill:#00cc66,stroke:#333,stroke-width:4px;
-    A["AddProfileOccupationData command"] -->|"constructor"| B["ProfileOcupationDataAdded event"]
-    C["CreateRelative command"] -->|"constructor"| D["RelativeCreated event"]
+    classDef red fill:#ff6666,stroke:#333,stroke-width:4px,color:#333;
+    classDef green fill:#00cc66,stroke:#333,stroke-width:4px,color:#333;
+    A["AddProfileOccupationData command"]
+    B["ProfileOcupationDataAdded event"]
+    C["CreateRelative command"]
+    D["RelativeCreated event"]
     E["types.ts"]
     F["Profile entity"]
     G["Relative entity"]
@@ -425,29 +426,19 @@ graph TD;
     class A,B,C,D,G green;
 ```
 
-| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
-| ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
-| 5             | 3                     | 0         | 192       | 30          | 2              |
+| Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Imports | Function calls |
+| ------------- | --------------------- | --------- | --------- | ----------- | ------- | -------------- |
+| 5             | 3                     | 0         | 192       | 30          | 7       | 0              |
 
 #### Milestone 5: Conclusions
 
-This milestone involved again the implementation of two use cases: add the occupation data, and add relatives to a specific profile. They're both relatively simple use cases, so the main difference we can notice is because of the creation of a relationship between two entities (The profile and the new relative entity). In NestJS, the relationship is defined explicitly in the model, but in Booster the relation is not made explicit until the moment of building the read model. As we saw in previous iterations, in Booster the new use cases are implemented in two independent commands that are self-contained while in Nest one of the use cases is implemented in an existing controller and the other in a new one.
+This milestone introduced other two use cases: add the occupation data, and add relatives to a specific profile. They're both relatively simple use cases, but we're introducing a relationship between the `Profile` and `Relative` entities. In NestJS, the relationship is defined explicitly in the model, but in Booster the relation is not made explicit until the moment of building the read model. In NestJS we use two separate controllers and have to access the corresponding services. As we don't need to check the current state in Booster, the new use cases are implemented in two independent commands that perform no function calls to any other application components.
 
-### Milestone 6: Security and monitoring
+### Milestone 6: Plot twist!
 
-In this milestone, we won't modify the implementation, as security and monitoring topics often extend beyond the scope of a specific service. However, it's important to highlight and analyze security and monitoring aspects and how they apply to the NestJS and Booster implementations.
+In this milestone, we will need to change our business logic to skip wakandians from passing address verification, and we will automatically send a welcome email as the final step of the KYC process, including a special promo code to buy vibranium for wakandians.
 
-In the context of a KYC process with a focus on security and monitoring, the event-sourcing approach offers several advantages, such as proactive monitoring, complete audit trail, and fine-grained access control.
-
-1. **Proactive monitoring**: With event-sourcing, every user action generates an event that can be forwarded to an event aggregation platform for real-time analysis. This allows us to use machine learning models or other techniques to proactively monitor user activity and identify unusual or suspicious transactions.
-
-2. **Complete audit trail**: Event-sourcing inherently stores incremental changes to the user's profile, providing a comprehensive audit trail and facilitating regulatory compliance. In contrast, the MVC design would overwrite the previous states, making it difficult to reconstruct the user's profile history.
-
-3. **Fine-grained access control**: Booster Framework allows for a more granular approach to access control during the KYC process. By decoupling the API from the entities, we can define specific commands for different stages of the profile update process. This enforces a strict workflow and ensures that users cannot bypass the designed process.
-
-In a MVC implementation, these techniques can be also implemented, but require an extra effort of the development team. In order to have a permanent trail of changes, you would need to extract the implicit events and send them to the events aggregation platform. One way to do this would be to explicitly log the events after every database write in your code, which is error prone (if a developer forgets to record the corresponding events for an action, the data is lost forever). Another way is implementing a CDC process in the database that records every change, which is more exhaustive than implementing it in code, but it loses the semantics of the change.
-
-Regarding access control, the MVC most idiomatic approach is to expose create/update endpoints for each entity and handle the special cases and workflows in the controller/service implementation. For instance, if we want to restrict the fields sent during profile creation to a specific subset of the profile entity's fields, we would need to implement that with a series of conditionals in the service that filter out the extra fields or rejects a request depending on the fields sent and the current state of the profile. Again, this is perfectly doable and it's a common way to solve it in MVC applications, but it's easier to make a mistake than when you have a specific endpoint for each command.
+TBD!
 
 ## Results and Conclusions
 
@@ -457,37 +448,54 @@ To illustrate the conclusions, we put together a summary table that showcases ea
 
 ### NestJS implementation results
 
-| Milestone | Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
-| --------- | ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
-| 1         | 4             | 1                     | 0         | 120       | 0           | 3              |
-| 2         | 4             | 4                     | 0         | 126       | 1           | 3              |
-| 3         | 0             | 5                     | 3         | 116       | 18          | 4              |
-| 4         | 0             | 7                     | 0         | 252       | 88          | 5              |
-| 5         | 4             | 4                     | 0         | 118       | 2           | 3              |
-| **TOTAL** | **12**        | **21**                | **3**     | **732**   | **109**     | **18**         |
+| Milestone | Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Imports | Function calls |
+| --------- | ------------- | --------------------- | --------- | --------- | ----------- | ------- | -------------- |
+| 1         | 4             | 1                     | 0         | 120       | 0           | 7       | 2              |
+| 2         | 4             | 4                     | 0         | 126       | 1           | 7       | 3              |
+| 3         | 0             | 5                     | 3         | 112       | 15          | 0       | 4              |
+| 4         | 0             | 7                     | 0         | 153       | 7           | 1       | 5              |
+| 5         | 4             | 4                     | 0         | 118       | 2           | 11      | 3              |
+| **TOTAL** | **12**        | **21**                | **3**     | **629**   | **25**      | **26**  | **17**         |
 
 ### Booster implementation results
 
-| Milestone | Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Explicit Links |
-| --------- | ------------- | --------------------- | --------- | --------- | ----------- | -------------- |
-| 1         | 5             | 0                     | 0         | 113       | 0           | 1              |
-| 2         | 4             | 3                     | 0         | 116       | 2           | 5              |
-| 3         | 3             | 4                     | 1         | 156       | 16          | 5              |
-| 4         | 5             | 6                     | 0         | 328       | 22          | 8              |
-| 5         | 5             | 3                     | 0         | 192       | 30          | 2              |
-| **TOTAL** | **22**        | **16**                | **1**     | **905**   | **70**      | **21**         |
+| Milestone | Files Created | Files Changed/Deleted | Refactors | LoC Added | LoC Deleted | Imports | Function calls |
+| --------- | ------------- | --------------------- | --------- | --------- | ----------- | ------- | -------------- |
+| 1         | 5             | 0                     | 0         | 113       | 0           | 6       | 0              |
+| 2         | 4             | 3                     | 0         | 116       | 2           | 7       | 3              |
+| 3         | 3             | 4                     | 1         | 156       | 16          | 6       | 3              |
+| 4         | 5             | 6                     | 0         | 295       | 10          | 11      | 4              |
+| 5         | 5             | 3                     | 0         | 192       | 30          | 7       | 0              |
+| **TOTAL** | **22**        | **16**                | **1**     | **872**   | **58**      | **37**  | **10**         |
 
-While the amount of data collected is not strictly enough for a demonstration, we can make the following observations:
+While the amount of data collected is not strictly enough for a demonstration, we can make the following observations for each of the measured items:
 
-1. As expected, Booster projects involve the creation of more new files, while NestJS projects tend to require more file updates. This implies that Booster typically encapsulates new functionality in new files, resulting in a more modular design.
-2. The amount of refactorings needed in NestJS projects is higher compared to Booster. As the code in NestJS is organized structurally instead of by functionality, we find situations that require changing pre-existing code to keep the code clean and idiomatic, so new use cases might make us rethink previously working code more often.
-3. Lines of code are not usually a good metric to measure amount of work or code complexity because it can be influenced by factors like code style or tools used, but taking into account that we've followed the same code style and implemented the same exact use cases, it's interesting to see the difference in the ratio of lines of code added vs lines of code deleted. In NestJS, the number of new lines is ~6,72 times the number of deleted lines, compared to ~13 times in Booster. All our work has been related to adding new features without deleting any prior functionality, so most if not all deleted lines must be related to changes in pre-existing code. This illustrates that in order to add a new feature, it's almost twice likely to make changes in existing code in the MVC project than in the event-sourcing project, which is very interesting.
-4. The number of links (explicit calls between files) in Booster is greater than the numer of links introduced in the NestJS project. This matches the fact that we're distributing code responsabilities better (each file has a single well-defined purpose). But while this could be understood as a signal of higher overall complexity, it's interesting to notice the direction of the links (always from commands/event handlers to other resources), which indicates that all business code required for solving a use case is self-contained in the corresponding command/event handler instead of being distributed among several layers of code.
+#### Files created vs. files changed/deleted
 
-Going beyond data, this experiment also illustrates some of the well-known benefits of event sourcing:
+![Files created vs. files changed/deleted in Nest](./img/files.png)
 
-In terms of security and monitoring, the event-sourced approach offers a natural and efficient way to implement proactive monitoring, ensure a comprehensive audit trail, and enforce fine-grained access control. Although these features can also be implemented in an MVC framework like NestJS, the event-sourced architecture within Booster streamlines their implementation and reduces the chances of human error.
+In Booster we created more new files, because all new business logic is always set in its own command or event handler. Most files changed are either supporting files like the state validation function, or files from the read pipeline (entities and read models). Business logic is well modularized.
 
-Also, as we saw in the case of the automated background check, the distributed and asyncronous nature of event sourcing significantly increases the robustness and scalability of chained processes, where a business action is triggered by one or more previous events in arbitrary complex workflows.
+In NestJS projects, code is organized in controllers and services that include several functionalities, so while we were adding new functionality, we reused more existing files and had to add less files. In iterations 3 and 4, all changes were made in existing files and no new files were added. Organizing the code this way keeps functions that deal with similar data close, and this might be handy for the developer while they're working, but it also means that it's more likely that two developers working in separate features end up solving conflicts when they try to merge their changes.
 
-In conclusion, while both frameworks can serve as suitable choices for implementing complex use cases like KYC processes, the CQRS+ES approach in general, and Booster Framework in particular, provides a more modular and self-contained approach where it's easier to introduce new use cases or change previous use cases without affecting unrelated code, favoring maintainability and team parallelization. But these advantages doesn't come for free; while each use case is self-contained in a command or an event handler, the CQRS+ES approach achieves this level of modularity by distributing the structure of the project in more files and requiring more calls. This, in addition to the mindset change that requires "thinking in events", could easily be perceived by most developers as a more complex or harder to handle approach, but we believe that the benefits exposed regarding maintainability and security make it totally worth betting for this approach, especially in enterprise environments where scalable teams, security, trazability and compliance with strict rules are a strong requirement.
+#### Refactors
+
+![Refactors](./img/refactors.png)
+
+We only faced code refactors in the milestone 3. We changed the state validation function in both projects with similar results, but in NestJS we faced a situation that is frequent in MVC projects: due to the past decision to use an endpoint called `/webhook` to receive ID validation webhooks, and given that we wanted to add a second endpoint to receive address verification webhooks in the same controller, we needed to rework the id verification functionality, affecting two different functions (controller and service). Booster has the strong convention to expose an independent mutation for each command, so previous decisions are less likely to affect the implementation of a new use case.
+
+#### Lines of code added vs. deleted
+
+![Lines of code](./img/loc.png)
+
+TBD!
+
+#### Imports and Function Calls
+
+![Imports and Function Calls](./img/imports-n-calls.png)
+
+TBD!
+
+### Conclusions
+
+TBD!
