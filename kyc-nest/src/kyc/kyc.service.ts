@@ -7,11 +7,13 @@ import {
 import { ProfileService } from '../profile/profile.service';
 import { Profile } from 'src/profile/profile.entity';
 import { ConfigService } from '@nestjs/config';
+import { PromoCodeService } from '../promo-code/promo-code.service';
 
 @Injectable()
 export class KYCService {
   constructor(
     private readonly profileService: ProfileService,
+    private readonly promoCodeService: PromoCodeService,
     private configService: ConfigService,
   ) {}
 
@@ -29,6 +31,12 @@ export class KYCService {
         idVerificationId: message.verificationId,
         idVerifiedAt: message.timestamp,
       });
+
+      // Trigger the automated background check for profiles that skip the address verification
+      const profile = await this.profileService.findById(userId);
+      if (profile.skipsAddressVerification()) {
+        this.performBackgroundCheck(userId);
+      }
     } else if (message.result === 'rejected') {
       await this.profileService.update(userId, {
         kycStatus: 'KYCIDRejected',
@@ -47,6 +55,12 @@ export class KYCService {
     const userId = message.userId;
 
     console.log('Received address verification webhook message:', message);
+
+    // Wakandians cannot legally share their address or location
+    const profile = await this.profileService.findById(userId);
+    if (profile.skipsAddressVerification()) {
+      throw new Error('Invalid address verification trial');
+    }
 
     if (message.result === 'success') {
       await this.profileService.update(userId, {
@@ -77,6 +91,8 @@ export class KYCService {
         backgroundCheckManualValidatorId: validatorId,
         backgroundCheckPassedAt: timestamp,
       });
+
+      await this.sendWelcomeEmail(userId);
     } else {
       await this.profileService.update(userId, {
         kycStatus: 'KYCBackgroundCheckRejected',
@@ -97,6 +113,8 @@ export class KYCService {
         kycStatus: 'KYCBackgroundCheckPassed',
         backgroundCheckPassedAt: new Date().toISOString(),
       });
+
+      await this.sendWelcomeEmail(profile.id);
     } else {
       await this.profileService.update(profileId, {
         kycStatus: 'KYCBackgroundCheckRequiresManualReview',
@@ -151,5 +169,52 @@ export class KYCService {
     });
     const pepData = await pepResponse.json();
     return pepData.result === 'clear';
+  }
+
+  private async sendWelcomeEmail(userId: string): Promise<void> {
+    const mailServiceURL = this.configService.get<string>('MAIL_SERVICE_URL');
+    const mailServiceAPIKey = this.configService.get<string>(
+      'MAIL_SERVICE_API_KEY',
+    );
+
+    const profile = await this.profileService.findById(userId);
+    const { id, firstName, lastName, email } = profile;
+    const profileData = {
+      id,
+      firstName,
+      lastName,
+      email,
+    };
+
+    const extraData = {};
+    if (profile.country === 'Wakanda') {
+      const promoCode = await this.promoCodeService.create(profile);
+      extraData['templateId'] = 'WakandianSpecialKYCWelcomeEmailTemplate';
+      extraData['promoCode'] = promoCode.code;
+    } else {
+      extraData['templateId'] = 'KYCWelcomeEmailTemplate';
+    }
+
+    const mailServiceResponse = await fetch(mailServiceURL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${mailServiceAPIKey}` },
+      body: JSON.stringify({
+        origin: 'kycService',
+        ...extraData,
+        ...profileData,
+      }),
+    });
+
+    const response = await mailServiceResponse.json();
+    const resultStatus = {};
+    if (response.result === 'delivered') {
+      resultStatus['welcomeEmailDeliveredAt'] = new Date().toISOString();
+    } else {
+      resultStatus['welcomeEmailDeliveryFailedAt'] = new Date().toISOString();
+    }
+    this.profileService.update(userId, {
+      kycStatus: 'KYCCompleted',
+      ...resultStatus,
+    });
   }
 }

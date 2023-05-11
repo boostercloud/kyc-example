@@ -25,7 +25,7 @@ export class ProfileService {
 
     if (
       profileData.kycStatus &&
-      !this.isValidTransition(profile.kycStatus, profileData.kycStatus)
+      !this.isValidTransition(profile, profileData.kycStatus)
     ) {
       throw new BadRequestException(
         `Invalid status transition from '${profile.kycStatus}' to '${profileData.kycStatus}'`,
@@ -42,7 +42,7 @@ export class ProfileService {
   async findById(id: string): Promise<Profile> {
     const options: FindOneOptions<Profile> = {
       where: { id },
-      relations: ['relatives'],
+      relations: ['relatives', 'promoCode'],
     };
 
     const profile = await this.profileRepository.findOne(options);
@@ -52,34 +52,41 @@ export class ProfileService {
     return profile;
   }
 
-  private isValidTransition(
-    currentState: KYCStatus,
-    newState: KYCStatus,
-  ): boolean {
-    return this.allowedTransitions(currentState).includes(newState);
+  private isValidTransition(profile: Profile, newState: KYCStatus): boolean {
+    return this.allowedTransitions(profile).includes(newState);
   }
 
-  private allowedTransitions(currentState: KYCStatus): KYCStatus[] {
-    switch (currentState) {
+  private allowedTransitions(profile: Profile): KYCStatus[] {
+    const AddressVerificationTargetStates: KYCStatus[] = [
+      'KYCAddressVerified',
+      'KYCAddressRejected',
+    ];
+    const AutomatedBackgroundCheckTargetStates: KYCStatus[] = [
+      'KYCBackgroundCheckPassed',
+      'KYCBackgroundCheckRequiresManualReview',
+    ];
+    switch (profile.kycStatus) {
       // Initial state
       case 'KYCPending':
         return ['KYCIDVerified', 'KYCIDRejected'];
       // Step 1: ID Verified, waiting for address verification
       case 'KYCIDVerified':
-        return ['KYCAddressVerified', 'KYCAddressRejected'];
+        if (profile.skipsAddressVerification()) {
+          return AutomatedBackgroundCheckTargetStates;
+        } else {
+          return AddressVerificationTargetStates;
+        }
       // Step 2: Address verified, waiting for background check
       case 'KYCAddressVerified':
-        return [
-          'KYCBackgroundCheckPassed',
-          'KYCBackgroundCheckRequiresManualReview',
-        ];
+        return AutomatedBackgroundCheckTargetStates;
       // Step 3: Background check suspicious, waiting for manual review
       case 'KYCBackgroundCheckRequiresManualReview':
         return ['KYCBackgroundCheckPassed', 'KYCBackgroundCheckRejected'];
       // Step 4: Background check passed, waiting for risk assessment
       case 'KYCBackgroundCheckPassed':
-        return [];
+        return ['KYCCompleted'];
       // Final states
+      case 'KYCCompleted':
       case 'KYCIDRejected':
       case 'KYCAddressRejected':
       case 'KYCBackgroundCheckRejected':

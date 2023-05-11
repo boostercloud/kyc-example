@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, OneToOne } from 'typeorm';
 import { Relative } from '../relative/relative.entity';
+import { PromoCode } from '../promo-code/promo-code.entity';
 
 export type KYCStatus =
   | 'KYCPending'
@@ -9,7 +10,8 @@ export type KYCStatus =
   | 'KYCAddressRejected'
   | 'KYCBackgroundCheckPassed'
   | 'KYCBackgroundCheckRequiresManualReview'
-  | 'KYCBackgroundCheckRejected';
+  | 'KYCBackgroundCheckRejected'
+  | 'KYCCompleted';
 
 export enum IncomeSource {
   Salary = 'Salary',
@@ -22,6 +24,8 @@ export enum IncomeSource {
   Pensions = 'Pensions',
   SocialSecurity = 'Social Security',
 }
+
+const countriesWithNoAddressVerifications = ['Wakanda'];
 
 @Entity()
 export class Profile {
@@ -109,6 +113,21 @@ export class Profile {
   @Column({ nullable: true })
   backgroundCheckRejectedAt?: string;
 
+  @Column({ nullable: true })
+  welcomeEmailDeliveredAt?: string;
+
+  @Column({ nullable: true })
+  welcomeEmailDeliveryFailedAt?: string;
+
   @OneToMany(() => Relative, (relative) => relative.profile, { cascade: true })
   relatives: Relative[];
+
+  @OneToOne(() => PromoCode, (promoCode) => promoCode.profile, {
+    cascade: true,
+  })
+  promoCode: PromoCode;
+
+  public skipsAddressVerification(): boolean {
+    return countriesWithNoAddressVerifications.includes(this.country);
+  }
 }

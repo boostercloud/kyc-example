@@ -436,7 +436,13 @@ This milestone introduced other two use cases: add the occupation data, and add 
 
 ### Milestone 6: Plot twist!
 
-In this milestone, we will need to change our business logic to skip wakandians from passing address verification, and we will automatically send a welcome email as the final step of the KYC process, including a special promo code to buy vibranium for wakandians.
+In this milestone, we will need to change our business logic to skip wakandians from passing address verification, and we will automatically send a welcome email as the final step of the KYC process, including a special promo code to buy vibranium for wakandians. So we're going to apply the following changes:
+
+1. Reject any address verification webhook call for wakandians.
+2. Allow `KYCStatus` to transition from `KYCIDVerified` to `KYCBackgroundCheckPassed` or `KYCBackgroundCheckRequiresManualReview` for wakandians.
+3. Trigger the automated background check after a successful ID verification for wakandians.
+4. Trigger the welcome email after the background check has been passed. For wakandians, generate and include promo codes to buy vibranium.
+5. When the email is sent, no matter if it succeeds or not, the result is registered and the profile is moved to the final `KYCCompleted` state.
 
 TBD!
 

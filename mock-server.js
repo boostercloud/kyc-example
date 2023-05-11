@@ -8,7 +8,8 @@ const server = http.createServer((req, res) => {
     console.log(chunk.toString());
   });
   let response = {
-    result: 'clear'
+    //result: 'clear'
+    result: 'delivered'
   };
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
