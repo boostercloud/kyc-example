@@ -34,9 +34,9 @@ export class ProcessIDVerification {
     }
 
     // Emit the corresponding event depending on the result, making sure that the transition is valid
-    if (command.result === 'success' && isValidTransition(profile.kycStatus, 'KYCIDVerified')) {
+    if (command.result === 'success' && isValidTransition(profile, 'KYCIDVerified')) {
       register.events(new IDVerificationSuccess(command.userId, command.verificationId, command.timestamp))
-    } else if (command.result === 'rejected' && isValidTransition(profile.kycStatus, 'KYCIDRejected')) {
+    } else if (command.result === 'rejected' && isValidTransition(profile, 'KYCIDRejected')) {
       register.events(new IDVerificationRejected(command.userId, command.verificationId, command.timestamp))
     } else {
       // Handle invalid state transitions

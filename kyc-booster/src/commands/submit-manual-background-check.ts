@@ -34,9 +34,9 @@ export class SubmitManualBackgroundCheck {
     }
 
     // Emit the corresponding event depending on the resolution, making sure that the transition is valid
-    if (command.resolution === 'passed' && isValidTransition(profile.kycStatus, 'KYCBackgroundCheckPassed')) {
+    if (command.resolution === 'passed' && isValidTransition(profile, 'KYCBackgroundCheckPassed')) {
       register.events(new BackgroundCheckPassed(command.userId, command.validatorId, command.timestamp))
-    } else if (command.resolution === 'rejected' && isValidTransition(profile.kycStatus, 'KYCBackgroundCheckRejected')) {
+    } else if (command.resolution === 'rejected' && isValidTransition(profile, 'KYCBackgroundCheckRejected')) {
       register.events(new BackgroundCheckRejected(command.userId, command.validatorId, command.timestamp))
     } else {
       // Handle invalid state transitions

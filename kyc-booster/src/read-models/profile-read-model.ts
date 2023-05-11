@@ -3,6 +3,7 @@ import { ProjectionResult, ReadModelAction, UUID } from '@boostercloud/framework
 import { Profile } from '../entities/profile'
 import { Relative } from '../entities/relative'
 import { IncomeSource, KYCStatus } from '../common/types'
+import { PromoCode } from '../entities/promo-code';
 
 @ReadModel({
   authorize: 'all', // You can specify roles to restrict access to this read model
@@ -37,6 +38,9 @@ export class ProfileReadModel {
     readonly occupation?: string,
     readonly employer?: string,
     readonly sourceOfIncome?: IncomeSource,
+    readonly welcomeEmailDeliveredAt?: string,
+    readonly welcomeEmailDeliveryFailedAt?: string,
+    readonly promoCode?: PromoCode,
     readonly relatives: Relative[] = []
   ) {}
 
@@ -57,6 +61,16 @@ export class ProfileReadModel {
       return ReadModelAction.Nothing
     }
   }
+
+  @Projects(PromoCode, 'profileId')
+  public static projectPromoCode(entity: PromoCode, currentProfileReadModel?: ProfileReadModel): ProjectionResult<ProfileReadModel> {
+    if (currentProfileReadModel) {
+      return ProfileReadModel.build(currentProfileReadModel, { promoCode: entity })
+    } else {
+      return ReadModelAction.Nothing
+    }
+  }
+
 
   private static build(currentProfileReadModel: ProfileReadModel, fields?: Partial<ProfileReadModel>): ProfileReadModel {
     return new ProfileReadModel(
@@ -88,6 +102,9 @@ export class ProfileReadModel {
       fields?.occupation ?? currentProfileReadModel.occupation,
       fields?.employer ?? currentProfileReadModel.employer,
       fields?.sourceOfIncome ?? currentProfileReadModel.sourceOfIncome,
+      fields?.welcomeEmailDeliveredAt ?? currentProfileReadModel.welcomeEmailDeliveredAt,
+      fields?.welcomeEmailDeliveryFailedAt ?? currentProfileReadModel.welcomeEmailDeliveryFailedAt,
+      fields?.promoCode ?? currentProfileReadModel.promoCode,
       fields?.relatives ?? currentProfileReadModel.relatives
     )
   }

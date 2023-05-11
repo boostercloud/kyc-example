@@ -28,15 +28,20 @@ export class ProcessAddressVerification {
       throw new Error(`Profile with ID ${command.userId} not found`)
     }
 
+    // Reject verification confirmations for profiles that don't need address verification
+    if (profile.skipsAddressVerification()) {
+      throw new Error('Address verification not supported for people living in invisible countries.')
+    }
+
     // Ensure that the verification result is valid
     if (command.result !== 'success' && command.result !== 'rejected') {
       throw new Error(`Invalid address verification result: ${command.result}`)
     }
 
     // Emit the corresponding event depending on the result, making sure that the transition is valid
-    if (command.result === 'success' && isValidTransition(profile.kycStatus, 'KYCAddressVerified')) {
+    if (command.result === 'success' && isValidTransition(profile, 'KYCAddressVerified')) {
       register.events(new AddressVerificationSuccess(command.userId, command.verificationId, command.timestamp))
-    } else if (command.result === 'rejected' && isValidTransition(profile.kycStatus, 'KYCAddressRejected')) {
+    } else if (command.result === 'rejected' && isValidTransition(profile, 'KYCAddressRejected')) {
       register.events(new AddressVerificationRejected(command.userId, command.verificationId, command.timestamp))
     } else {
       // Handle invalid state transitions

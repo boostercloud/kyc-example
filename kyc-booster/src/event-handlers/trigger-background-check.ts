@@ -4,14 +4,26 @@ import { Register } from '@boostercloud/framework-types'
 import { Profile } from '../entities/profile';
 import { BackgroundCheckManualReviewRequired } from '../events/background-check-manual-review-required';
 import { BackgroundCheckPassed } from '../events/background-check-passed';
+import { IDVerificationSuccess } from '../events/id-verification-success';
 
+@EventHandler(IDVerificationSuccess)
 @EventHandler(AddressVerificationSuccess)
 export class TriggerBackgroundCheck {
-  public static async handle(event: AddressVerificationSuccess, register: Register): Promise<void> {
+  public static async handle(event: IDVerificationSuccess | AddressVerificationSuccess, register: Register): Promise<void> {
     const profile = await Booster.entity(Profile, event.profileId);
 
     if (!profile) {
       throw new Error(`Profile ${event.profileId} not found`);
+    }
+
+    // If the profile is set to skip address verification, we should never receive an AddressVerificationSuccess event
+    if (event instanceof AddressVerificationSuccess && profile.skipsAddressVerification()) {
+      throw new Error(`AddressVerificationSuccess should have never happened for profile ${event.profileId}, because ${profile.country} is invisible.`);
+    }
+
+    // If the profile is not set to skip address verification, we should never receive an IDVerificationSuccess event
+    if (event instanceof IDVerificationSuccess && !profile.skipsAddressVerification()) {
+      throw new Error(`IDVerificationSuccess should have never happened for profile ${event.profileId}, because ${profile.country} is not an visible country.`);
     }
 
     const passedOFACTest = await this.checkOFACListInclusion(profile);

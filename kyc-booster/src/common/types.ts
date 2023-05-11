@@ -6,7 +6,8 @@ export type KYCStatus =
   | 'KYCAddressRejected'
   | 'KYCBackgroundCheckPassed'
   | 'KYCBackgroundCheckRequiresManualReview'
-  | 'KYCBackgroundCheckRejected';
+  | 'KYCBackgroundCheckRejected'
+  | 'KYCCompleted'
 
 export type IncomeSource =  
   | 'Salary' 

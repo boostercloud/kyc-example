@@ -10,6 +10,11 @@ import { BackgroundCheckPassed } from '../events/background-check-passed';
 import { BackgroundCheckRejected } from '../events/background-check-rejected'
 import { BackgroundCheckManualReviewRequired } from '../events/background-check-manual-review-required';
 import { ProfileOcupationDataAdded } from '../events/profile-ocupation-data-added'
+import { WelcomeEmailDeliveryFailed } from '../events/welcome-email-delivery-failed'
+import { WelcomeEmailDelivered } from '../events/welcome-email-delivered'
+import { KYCCompleted } from '../events/kyc-completed';
+
+const countriesWithNoAddressVerifications = ['Wakanda'];
 
 @Entity
 export class Profile {
@@ -42,6 +47,8 @@ export class Profile {
     readonly occupation?: string,
     readonly employer?: string,
     readonly sourceOfIncome?: IncomeSource,
+    readonly welcomeEmailDeliveredAt?: string,
+    readonly welcomeEmailDeliveryFailedAt?: string,
   ) {}
 
   @Reduces(ProfileCreated)
@@ -120,6 +127,27 @@ export class Profile {
     }, currentProfile)
   }
 
+  @Reduces(WelcomeEmailDelivered)
+  public static onWelcomeEmailDelivered(event: WelcomeEmailDelivered, currentProfile?: Profile): Profile {
+    return Profile.nextProfile({
+      welcomeEmailDeliveredAt: event.timestamp,
+    }, currentProfile)
+  }
+
+  @Reduces(WelcomeEmailDeliveryFailed)
+  public static onWelcomeEmailDeliveryFailed(event: WelcomeEmailDeliveryFailed, currentProfile?: Profile): Profile {
+    return Profile.nextProfile({
+      welcomeEmailDeliveryFailedAt: event.timestamp,
+    }, currentProfile)
+  }
+
+  @Reduces(KYCCompleted)
+  public static onKYCCompleted(event: KYCCompleted, currentProfile?: Profile): Profile {
+    return Profile.nextProfile({
+      kycStatus: 'KYCCompleted',
+    }, currentProfile)
+  }
+
   private static nextProfile(fields: Partial<Profile>, currentProfile?: Profile): Profile {
     if (!currentProfile) {
       throw new Error('Cannot reduce an event over a non-existing profile')
@@ -153,6 +181,12 @@ export class Profile {
       fields.occupation || currentProfile.occupation,
       fields.employer || currentProfile.employer,
       fields.sourceOfIncome || currentProfile.sourceOfIncome,
+      fields.welcomeEmailDeliveredAt || currentProfile.welcomeEmailDeliveredAt,
+      fields.welcomeEmailDeliveryFailedAt || currentProfile.welcomeEmailDeliveryFailedAt,
     )
+  }
+
+  public skipsAddressVerification(): boolean {
+    return countriesWithNoAddressVerifications.includes(this.country);
   }
 }
