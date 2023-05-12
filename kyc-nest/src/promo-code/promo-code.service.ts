@@ -1,15 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ProfileService } from '../profile/profile.service';
 import { PromoCode } from './promo-code.entity';
-import { Profile } from 'src/profile/profile.entity';
+import { Profile } from '../profile/profile.entity';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class PromoCodeService {
   constructor(
-    private readonly profileService: ProfileService,
     @InjectRepository(PromoCode)
     private relativeRepository: Repository<PromoCode>,
   ) {}
